@@ -10,6 +10,8 @@
 
 #include <assert.h>
 
+#define DEBUG 1
+
 #define nullptr NULL
 
 typedef unsigned short uint16;
@@ -23,5 +25,9 @@ typedef long long int64;
 typedef float float32;
 typedef double float64;
 typedef long double float96;
+
+void logError(const char *format, ...);
+
+void logDebug(const char *format, ...);
 
 #endif /* GLOBALDEFINES_HPP_ */
