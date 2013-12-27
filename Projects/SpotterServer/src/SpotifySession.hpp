@@ -12,13 +12,13 @@
 #include <libspotify/api.h>
 
 #include "GlobalDefines.hpp"
-#include "TaskInformation.hpp"
+
 
 namespace fambogie {
 class SpotifySession;
 }
+#include "Tasks/Task.hpp"
 #include "SpotifyRunner.hpp"
-
 #include "SpotifyPlaylistContainer.hpp"
 
 namespace fambogie {
@@ -60,7 +60,7 @@ public:
 	/**
 	 * This function will process a given task, and will handle everything for spotify
 	 */
-	void processTask(TaskInformation* task);
+	void processTask(Task* task);
 
 	/**
 	 * Destructor

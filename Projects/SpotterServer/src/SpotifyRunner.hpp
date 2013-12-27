@@ -11,37 +11,32 @@
 #include <pthread.h>
 #include <list>
 #include "GlobalDefines.hpp"
-#include "TaskInformation.hpp"
 
 namespace fambogie {
 class SpotifyRunner;
 }
-
+#include "Thread.hpp"
+#include "Tasks/Task.hpp"
 #include "SpotifySession.hpp"
 
 namespace fambogie {
 
-class SpotifyRunner {
+class SpotifyRunner : public Thread{
 public:
 	SpotifyRunner(sp_session_config& config);
 	virtual ~SpotifyRunner();
 	void run();
 	void stop();
 	void notify();
-	void addTask(TaskInformation* task);
+	void addTask(Task* task);
 	void processTasks();
 private:
-	void* threadMain();
-	static void* threadBootStrapper(void* instancePtr);
-
-	pthread_t runnerThread;
 	pthread_mutex_t mainLoopConditionMutex;
 	pthread_cond_t mainLoopCondition;
-	bool running;
 	bool threadShouldStop;
 	int nextTimeout;
 
-	std::list<TaskInformation*> taskList;
+	std::list<Task*> taskList;
 
 	SpotifySession* spotifySession;
 

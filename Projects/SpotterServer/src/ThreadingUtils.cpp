@@ -12,14 +12,14 @@
 
 namespace fambogie {
 
-struct timespec getPthreadTimeout(int nanosec) {
+struct timespec getPthreadTimeout(int millisec) {
 	timeval now;
 	struct timespec timeout;
 
 	gettimeofday(&now, nullptr);
 	TIMEVAL_TO_TIMESPEC(&now, &timeout);
-	timeout.tv_sec += (nanosec / 1000);
-	timeout.tv_nsec += (nanosec % 1000) * 1000000;
+	timeout.tv_sec += (millisec / 1000);
+	timeout.tv_nsec += (millisec % 1000) * 1000000;
 	return timeout;
 }
 

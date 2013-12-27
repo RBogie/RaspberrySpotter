@@ -2,25 +2,21 @@ project(SpotterServer)
 
 set(SOURCE
 	src/Main.cpp
+	src/MessageConversion.cpp
 	src/Logging.cpp
 	src/SpotifyPlaylistContainer.cpp
 	src/SpotifyRunner.cpp
 	src/SpotifySession.cpp
+	src/TcpConnection.cpp
+	src/TcpServer.cpp
+	src/Thread.cpp
 	src/ThreadingUtils.cpp
 	src/SpotifyAlsa/audio.cpp
-	src/SpotifyAlsa/alsa-audio.cpp)
+	src/SpotifyAlsa/alsa-audio.cpp
+	src/Tasks/Task.cpp
+	src/Tasks/PlaylistTask.cpp)
 
-set(HEADERS
-	src/SpotifyPlaylistContainer.hpp
-	src/SpotifyRunner.hpp
-	src/SpotifySession.hpp
-	src/ThreadingUtils.hpp
-	src/GlobalDefines.hpp
-	src/SpotifyKeys.hpp
-	src/SpotifyAlsa/audio.h
-	src/SpotifyAlsa/queue.h)
-
-add_executable(SpotterServer ${SOURCE} ${HEADERS})
+add_executable(SpotterServer ${SOURCE})
 target_link_libraries(SpotterServer ${LIBSPOTIFY_LIBRARIES})
 target_link_libraries(SpotterServer ${ALSA_LIBRARIES})
 target_link_libraries(SpotterServer ${CMAKE_THREAD_LIBS_INIT})

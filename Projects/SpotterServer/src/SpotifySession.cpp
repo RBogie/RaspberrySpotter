@@ -9,6 +9,8 @@
 
 #include <unistd.h>
 
+#include "Tasks/PlaylistTask.h"
+
 namespace fambogie {
 
 std::map<sp_session*, SpotifySession*> SpotifySession::sessionMapping;
@@ -103,10 +105,10 @@ void SpotifySession::logout() {
 	sp_session_logout(session);
 }
 
-void SpotifySession::processTask(TaskInformation* task) {
-	switch(task->command) {
-	case ListPlaylists:
-		spotifyPlaylistContainer->processTask(task);
+void SpotifySession::processTask(Task* task) {
+	switch(task->getType()) {
+	case TaskTypePlaylist:
+		spotifyPlaylistContainer->processTask(dynamic_cast<PlaylistTask*>(task));
 		break;
 	default:
 		logError("Received unknown command");

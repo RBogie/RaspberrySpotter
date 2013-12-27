@@ -1,1 +1,2 @@
 add_subdirectory(SpotterServer)
+add_subdirectory(TestClient)

@@ -14,7 +14,7 @@ typedef struct timespec;
 
 namespace fambogie {
 
-timespec getPthreadTimeout(int nanoSeconds);
+timespec getPthreadTimeout(int millisec);
 
 }
 

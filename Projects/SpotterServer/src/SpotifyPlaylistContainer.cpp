@@ -6,6 +6,7 @@
  */
 
 #include "SpotifyPlaylistContainer.hpp"
+#include "Tasks/PlaylistTask.h"
 
 namespace fambogie {
 
@@ -42,9 +43,9 @@ SpotifyPlaylistContainer::SpotifyPlaylistContainer(sp_session* session) {
 	        NULL);
 }
 
-void SpotifyPlaylistContainer::processTask(TaskInformation* task) {
-	switch(task->command) {
-	case ListPlaylists:
+void SpotifyPlaylistContainer::processTask(PlaylistTask* task) {
+	switch(task->getCommand()) {
+	case CommandList:
 		int numPlaylists = sp_playlistcontainer_num_playlists(playlistContainer);
 		for (int i = 0; i < numPlaylists; i++) {
 			sp_playlist* playlist = sp_playlistcontainer_playlist(playlistContainer, i);

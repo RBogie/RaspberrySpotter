@@ -8,11 +8,13 @@
 #ifndef SPOTIFYPLAYLISTCONTAINER_HPP_
 #define SPOTIFYPLAYLISTCONTAINER_HPP_
 
+
 namespace fambogie {
 class SpotifyPlaylistContainer;
+class PlaylistTask;
 }
 
-#include "SpotifySession.hpp"
+#include <libspotify/api.h>
 
 namespace fambogie {
 
@@ -21,7 +23,7 @@ public:
 	SpotifyPlaylistContainer(sp_session* session);
 	virtual ~SpotifyPlaylistContainer();
 
-	void processTask(TaskInformation* task);
+	void processTask(PlaylistTask* task);
 private:
 	sp_session* session;
 

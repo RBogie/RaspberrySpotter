@@ -3,10 +3,11 @@
 #include "GlobalDefines.hpp"
 #include "SpotifyKeys.hpp"
 #include "SpotifyRunner.hpp"
-#include "TaskInformation.hpp"
+#include "TcpServer.hpp"
 #include <unistd.h>
 
 int main(int argc, const char* argv[]) {
+
 	sp_session_config config;
 	memset(&config, 0, sizeof(config));
 
@@ -18,12 +19,8 @@ int main(int argc, const char* argv[]) {
 	config.user_agent = "RaspberrySpotter";
 
 	fambogie::SpotifyRunner runner(config);
-	runner.run();
+	runner.start();
 
-	sleep(5);
-	fambogie::TaskInformation* task = new fambogie::TaskInformation();
-	task->command = fambogie::ListPlaylists;
-	runner.addTask(task);
-
-	sleep(3600);
+	fambogie::TcpServer server(6666, 8, &runner);
+	server.listen();
 }
