@@ -27,6 +27,9 @@ public:
 	void listen();
 	virtual ~TcpServer();
 
+	void cleanupClosedConnections();
+	void connectionClosed(TcpConnection* connection);
+
 private:
 	SpotifyRunner* spotifyRunner;
 
@@ -37,6 +40,7 @@ private:
 	struct sockaddr_in serverAddress;
 
 	std::vector<TcpConnection*> currentConnections;
+	std::vector<TcpConnection*> closedConnections; //Can be deleted after some time
 };
 
 } /* namespace fambogie */

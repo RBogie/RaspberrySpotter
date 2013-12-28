@@ -8,12 +8,12 @@
 #ifndef SPOTIFYPLAYLISTCONTAINER_HPP_
 #define SPOTIFYPLAYLISTCONTAINER_HPP_
 
-
 namespace fambogie {
 class SpotifyPlaylistContainer;
 class PlaylistTask;
 }
 
+#include <map>
 #include <libspotify/api.h>
 
 namespace fambogie {
@@ -26,9 +26,15 @@ public:
 	void processTask(PlaylistTask* task);
 private:
 	sp_session* session;
-
 	sp_playlistcontainer* playlistContainer;
+	sp_playlistcontainer_callbacks playlistCallbacks;
 
+	std::map<sp_playlistcontainer*, SpotifyPlaylistContainer*> containerMapper;
+	static void playlistAdded(sp_playlistcontainer* pc, sp_playlist* pl,
+			int position, void* userdata);
+	static void playlistMoved(sp_playlistcontainer* pc, sp_playlist* playlist,
+			int position, int new_position, void* userdata);
+	static void playlistRemoved();
 
 };
 

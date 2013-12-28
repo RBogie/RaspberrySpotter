@@ -13,12 +13,20 @@
 
 namespace fambogie {
 
-TcpConnection::TcpConnection(int connectionSocket,
+TcpConnection::TcpConnection(int connectionSocket, TcpServer* server,
 		SpotifyRunner* spotifyRunner) {
 	this->connectionSocket = connectionSocket;
+	this->server = server;
 	this->spotifyRunner = spotifyRunner;
 	this->shouldStop = false;
 	this->connectionOpen = true;
+
+	int keepAlive = 1;
+	timeval sndTimeout;
+	sndTimeout.tv_sec = 0;
+	sndTimeout.tv_usec = 500 * 1000000;//500 milliseconds
+	setsockopt(connectionSocket, SOL_SOCKET, SO_KEEPALIVE, &keepAlive, sizeof(keepAlive));
+	setsockopt(connectionSocket, SOL_SOCKET, SO_SNDTIMEO, &sndTimeout, sizeof(sndTimeout));
 }
 
 void TcpConnection::run() {
@@ -65,6 +73,7 @@ void TcpConnection::run() {
 	connectionSocket = 0;
 	connectionOpen = false;
 	shouldStop = false;
+	server->connectionClosed(this);
 }
 
 void TcpConnection::handleMessage(const char* message) {
@@ -80,6 +89,7 @@ void TcpConnection::handleMessage(const char* message) {
 
 void TcpConnection::stop() {
 	shouldStop = true;
+	this->join();
 }
 
 TcpConnection::~TcpConnection() {

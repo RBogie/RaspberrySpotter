@@ -17,13 +17,14 @@ class TcpConnection;
 }
 
 #include "Thread.hpp"
+#include "TcpServer.hpp"
 #include "SpotifyRunner.hpp"
 
 namespace fambogie {
 
 class TcpConnection : public Thread{
 public:
-	TcpConnection(int connectionSocket, SpotifyRunner* spotifyRunner);
+	TcpConnection(int connectionSocket, TcpServer* server, SpotifyRunner* spotifyRunner);
 	virtual ~TcpConnection();
 
 	void run();
@@ -32,6 +33,7 @@ public:
 	void handleMessage(const char* message);
 private:
 	int connectionSocket;
+	TcpServer* server;
 	SpotifyRunner* spotifyRunner;
 	bool shouldStop;
 	bool connectionOpen;

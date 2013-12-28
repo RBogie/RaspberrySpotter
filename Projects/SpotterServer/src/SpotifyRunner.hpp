@@ -18,6 +18,8 @@ class SpotifyRunner;
 #include "Thread.hpp"
 #include "Tasks/Task.hpp"
 #include "SpotifySession.hpp"
+#include "Mutex.hpp"
+#include "CondVar.hpp"
 
 namespace fambogie {
 
@@ -31,8 +33,8 @@ public:
 	void addTask(Task* task);
 	void processTasks();
 private:
-	pthread_mutex_t mainLoopConditionMutex;
-	pthread_cond_t mainLoopCondition;
+	Mutex mainLoopConditionMutex;
+	CondVar mainLoopCondition;
 	bool threadShouldStop;
 	int nextTimeout;
 

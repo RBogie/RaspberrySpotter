@@ -15,8 +15,7 @@
 namespace fambogie {
 
 SpotifyRunner::SpotifyRunner(sp_session_config& config) :
-		mainLoopConditionMutex(PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP), mainLoopCondition(
-		PTHREAD_COND_INITIALIZER){
+		mainLoopConditionMutex(true), mainLoopCondition(mainLoopConditionMutex){
 	spotifySession = new SpotifySession(config, this);
 
 	threadShouldStop = false;
@@ -26,7 +25,7 @@ SpotifyRunner::SpotifyRunner(sp_session_config& config) :
 }
 
 void SpotifyRunner::run() {
-	if (pthread_mutex_lock(&mainLoopConditionMutex) != 0) {
+	if (mainLoopConditionMutex.lock() != 0) {
 			logError("Could not aquire lock: %s %d", __FILE__, __LINE__);
 			pthread_exit(0);
 		}
@@ -34,13 +33,12 @@ void SpotifyRunner::run() {
 		while (!threadShouldStop) {
 			int loopTimeout = spotifySession->processEvents();
 			if (loopTimeout == 0) {
-				pthread_cond_wait(&mainLoopCondition, &mainLoopConditionMutex);
+				mainLoopCondition.wait();
 				processTasks();
 			} else {
 //				logDebug("LoopTimeout: %d", loopTimeout);
 				timespec timeout = fambogie::getPthreadTimeout(loopTimeout);
-				switch (pthread_cond_timedwait(&mainLoopCondition,
-						&mainLoopConditionMutex, &timeout)) {
+				switch (mainLoopCondition.wait(&timeout)) {
 				case 0:
 					//Since we got a notification, we try to process everything from the jobqueue.
 					processTasks();
@@ -56,7 +54,7 @@ void SpotifyRunner::run() {
 			}
 		}
 
-		if (pthread_mutex_unlock(&mainLoopConditionMutex) != 0) {
+		if (mainLoopConditionMutex.unlock() != 0) {
 			logError("Could not release lock: %s %d", __FILE__, __LINE__);
 			pthread_exit(0);
 		}
@@ -68,7 +66,7 @@ void SpotifyRunner::stop() {
 }
 
 void SpotifyRunner::addTask(Task* task) {
-	if (pthread_mutex_lock(&mainLoopConditionMutex) != 0) {
+	if (mainLoopConditionMutex.lock() != 0) {
 		logError("Could not aquire lock: %s %d", __FILE__, __LINE__);
 		pthread_exit(0);
 	}
@@ -77,14 +75,14 @@ void SpotifyRunner::addTask(Task* task) {
 
 	this->notify();
 
-	if (pthread_mutex_unlock(&mainLoopConditionMutex) != 0) {
+	if (mainLoopConditionMutex.unlock() != 0) {
 		logError("Could not release lock: %s %d", __FILE__, __LINE__);
 		pthread_exit(0);
 	}
 }
 
 void SpotifyRunner::processTasks() {
-	if (pthread_mutex_lock(&mainLoopConditionMutex) != 0) {
+	if (mainLoopConditionMutex.lock() != 0) {
 		logError("Could not aquire lock: %s %d", __FILE__, __LINE__);
 		pthread_exit(0);
 	}
@@ -94,14 +92,14 @@ void SpotifyRunner::processTasks() {
 		taskList.pop_front();
 	}
 
-	if (pthread_mutex_unlock(&mainLoopConditionMutex) != 0) {
+	if (mainLoopConditionMutex.unlock() != 0) {
 		logError("Could not release lock: %s %d", __FILE__, __LINE__);
 		pthread_exit(0);
 	}
 }
 
 void SpotifyRunner::notify() {
-	if (pthread_cond_signal(&mainLoopCondition) != 0) {
+	if (mainLoopCondition.signal() != 0) {
 		logError("pthread_cond_signal");
 		pthread_exit(0);
 	}
@@ -112,9 +110,6 @@ SpotifyRunner::~SpotifyRunner() {
 		this->stop();
 		this->join();
 	}
-
-	pthread_cond_destroy(&mainLoopCondition);
-	pthread_mutex_destroy(&mainLoopConditionMutex);
 
 	delete spotifySession;
 }

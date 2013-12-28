@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <cstring>
+#include <algorithm>
 
 #include "MessageConversion.hpp"
 
@@ -62,7 +63,7 @@ void TcpServer::listen() {
 					if (send(clientSocket, message, strlen(message) + 1, 0)
 							> 0) {
 						TcpConnection* connection = new TcpConnection(
-								clientSocket, spotifyRunner);
+								clientSocket, this, spotifyRunner);
 						connection->start();
 						this->currentConnections.push_back(connection);
 						numCurrentConnections++;
@@ -97,11 +98,33 @@ void TcpServer::listen() {
 }
 
 TcpServer::~TcpServer() {
-	for (std::vector<TcpConnection*>::iterator it = currentConnections.begin();
-			it != currentConnections.end(); it++) {
-		TcpConnection* connection = *it;
+	this->cleanupClosedConnections();
 
+	std::vector<TcpConnection*>::iterator it = currentConnections.begin();
+	while(it != currentConnections.end()) {
+		TcpConnection* connection = *it;
+		connection->stop();
+		delete connection;
+		currentConnections.erase(it++);
 	}
+}
+
+void TcpServer::cleanupClosedConnections() {
+	std::vector<TcpConnection*>::iterator it = closedConnections.begin();
+	while(it != closedConnections.end()) {
+		TcpConnection* connection = *it;
+		delete connection;
+		closedConnections.erase(it++);
+	}
+}
+
+void TcpServer::connectionClosed(TcpConnection* connection) {
+	std::vector<TcpConnection*>::iterator position = std::find(currentConnections.begin(), currentConnections.end(), connection);
+	if (position != currentConnections.end()){
+		currentConnections.erase(position);
+	}
+	closedConnections.push_back(connection);
+	numCurrentConnections--;
 }
 
 } /* namespace fambogie */
