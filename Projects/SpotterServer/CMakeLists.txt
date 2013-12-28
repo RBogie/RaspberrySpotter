@@ -13,6 +13,7 @@ set(SOURCE
 	src/ThreadingUtils.cpp
 	src/SpotifyAlsa/audio.cpp
 	src/SpotifyAlsa/alsa-audio.cpp
+	src/Responses/ClientResponse.cpp
 	src/Tasks/Task.cpp
 	src/Tasks/PlaylistTask.cpp)
 

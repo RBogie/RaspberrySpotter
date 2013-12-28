@@ -20,7 +20,7 @@ class SpotifySession;
 #include "Tasks/Task.hpp"
 #include "SpotifyRunner.hpp"
 #include "SpotifyPlaylistContainer.hpp"
-
+#include "Responses/ClientResponse.hpp"
 namespace fambogie {
 
 class SpotifySession {
@@ -60,7 +60,7 @@ public:
 	/**
 	 * This function will process a given task, and will handle everything for spotify
 	 */
-	void processTask(Task* task);
+	ClientResponse* processTask(Task* task);
 
 	/**
 	 * Destructor

@@ -21,6 +21,17 @@ enum Command {
 	CommandList,
 };
 
+enum ListFlags {
+	Name = 1,
+	NumTracks = 2,
+	Description = 4,
+	Image = 8,
+};
+
+union CommandInfo {
+	char ListFlags;
+};
+
 class PlaylistTask: public Task {
 public:
 	PlaylistTask();
@@ -30,8 +41,12 @@ public:
 	void setCommand(Command command);
 	Command getCommand();
 
+	void setCommandInfo(CommandInfo info);
+	CommandInfo getCommandInfo();
+
 protected:
 	Command command;
+	CommandInfo info;
 };
 
 } /* namespace fambogie */

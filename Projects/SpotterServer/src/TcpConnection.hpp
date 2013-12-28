@@ -19,6 +19,7 @@ class TcpConnection;
 #include "Thread.hpp"
 #include "TcpServer.hpp"
 #include "SpotifyRunner.hpp"
+#include "Responses/ClientResponse.hpp"
 
 namespace fambogie {
 
@@ -30,6 +31,8 @@ public:
 	void run();
 	void stop();
 
+	void sendResponse(ClientResponse* response);
+	void sendResponse(char* response);
 	void handleMessage(const char* message);
 private:
 	int connectionSocket;

@@ -29,4 +29,12 @@ Command PlaylistTask::getCommand() {
 	return command;
 }
 
+void PlaylistTask::setCommandInfo(CommandInfo info) {
+	this->info = info;
+}
+
+CommandInfo PlaylistTask::getCommandInfo() {
+	return info;
+}
+
 } /* namespace fambogie */

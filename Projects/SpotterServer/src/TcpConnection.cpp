@@ -24,9 +24,11 @@ TcpConnection::TcpConnection(int connectionSocket, TcpServer* server,
 	int keepAlive = 1;
 	timeval sndTimeout;
 	sndTimeout.tv_sec = 0;
-	sndTimeout.tv_usec = 500 * 1000000;//500 milliseconds
-	setsockopt(connectionSocket, SOL_SOCKET, SO_KEEPALIVE, &keepAlive, sizeof(keepAlive));
-	setsockopt(connectionSocket, SOL_SOCKET, SO_SNDTIMEO, &sndTimeout, sizeof(sndTimeout));
+	sndTimeout.tv_usec = 500 * 1000000; //500 milliseconds
+	setsockopt(connectionSocket, SOL_SOCKET, SO_KEEPALIVE, &keepAlive,
+			sizeof(keepAlive));
+	setsockopt(connectionSocket, SOL_SOCKET, SO_SNDTIMEO, &sndTimeout,
+			sizeof(sndTimeout));
 }
 
 void TcpConnection::run() {
@@ -74,6 +76,22 @@ void TcpConnection::run() {
 	connectionOpen = false;
 	shouldStop = false;
 	server->connectionClosed(this);
+}
+
+void TcpConnection::sendResponse(ClientResponse* response) {
+	if (connectionOpen) {
+		char* jsonResponse = MessageConversion::convertResponseToJson(response);
+		sendResponse(jsonResponse);
+	}
+	delete response;
+}
+void TcpConnection::sendResponse(char* response) {
+	if (connectionOpen) {
+		if (send(connectionSocket, response, strlen(response) + 1, 0) <= 0) {
+			logError("Could not send response!");
+		}
+	}
+	delete response;
 }
 
 void TcpConnection::handleMessage(const char* message) {

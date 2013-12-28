@@ -42,17 +42,42 @@ SpotifyPlaylistContainer::SpotifyPlaylistContainer(sp_session* session) {
 	nullptr);
 }
 
-void SpotifyPlaylistContainer::processTask(PlaylistTask* task) {
+ClientResponse* SpotifyPlaylistContainer::processTask(PlaylistTask* task) {
+	ClientResponse* response = nullptr;
 	switch (task->getCommand()) {
 	case CommandList:
-		int numPlaylists = sp_playlistcontainer_num_playlists(
-				playlistContainer);
-		for (int i = 0; i < numPlaylists; i++) {
-			sp_playlist* playlist = sp_playlistcontainer_playlist(
-					playlistContainer, i);
-			logDebug(sp_playlist_name(playlist));
-		}
+		return listPlaylists(task);
+		break;
 	}
+	return response;
+}
+
+ListResponse<PlaylistInfo*>* SpotifyPlaylistContainer::listPlaylists(
+		PlaylistTask* task) {
+	ListResponse<PlaylistInfo*>* response = new ListResponse<PlaylistInfo*>();
+	response->setListType(ListTypePlaylist);
+	CommandInfo info = task->getCommandInfo();
+	bool sendName			= (info.ListFlags & Name == Name);
+	bool sendNumTracks		= (info.ListFlags & NumTracks == NumTracks);
+	bool sendDescription	= (info.ListFlags & Description == Description);
+
+	int numPlaylists = sp_playlistcontainer_num_playlists(playlistContainer);
+	for (int i = 0; i < numPlaylists; i++) {
+		PlaylistInfo* playlistInfo = new PlaylistInfo();
+		playlistInfo->id = i;
+		sp_playlist* playlist = sp_playlistcontainer_playlist(playlistContainer, i);
+		if(sendName) {
+			playlistInfo->name = sp_playlist_name(playlist);
+		}
+		if(sendNumTracks) {
+			playlistInfo->numTracks = sp_playlist_num_tracks(playlist);
+		}
+		if(sendDescription) {
+			playlistInfo->description = sp_playlist_get_description(playlist);
+		}
+		response->addMember(playlistInfo);
+	}
+	return response;
 }
 
 SpotifyPlaylistContainer::~SpotifyPlaylistContainer() {

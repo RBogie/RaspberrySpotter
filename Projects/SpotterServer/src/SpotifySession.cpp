@@ -105,15 +105,17 @@ void SpotifySession::logout() {
 	sp_session_logout(session);
 }
 
-void SpotifySession::processTask(Task* task) {
+ClientResponse* SpotifySession::processTask(Task* task) {
+	ClientResponse* response = nullptr;
 	switch(task->getType()) {
 	case TaskTypePlaylist:
-		spotifyPlaylistContainer->processTask(dynamic_cast<PlaylistTask*>(task));
+		response = spotifyPlaylistContainer->processTask(dynamic_cast<PlaylistTask*>(task));
 		break;
 	default:
 		logError("Received unknown command");
 	}
 	delete task;
+	return response;
 }
 
 void SpotifySession::onLogin(sp_error error) {
