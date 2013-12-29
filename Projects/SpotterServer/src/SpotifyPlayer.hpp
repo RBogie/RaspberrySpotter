@@ -9,7 +9,7 @@
 #define SPOTIFYPLAYER_HPP_
 
 #include "GlobalDefines.hpp"
-
+#include <list>
 #include <libspotify/api.h>
 #include "SpotifyAlsa/audio.h"
 namespace fambogie {
@@ -19,7 +19,9 @@ public:
 	SpotifyPlayer(sp_session* session);
 	virtual ~SpotifyPlayer();
 
-	void playTrack(sp_track* track, sp_track* nextTrack);
+	void playTrack(sp_track* track);
+	void addTrackToQueue(sp_track* track);
+	void clearPlayQueue();
 
 	int onMusicDelivery(const sp_audioformat* format, const void* frames,
 			int numFrames);
@@ -33,7 +35,7 @@ private:
 	bool currentTrackEnded = false;
 
 	sp_track* currentTrack;
-	sp_track* nextTrack;
+	std::list<sp_track*> playQueue;
 };
 
 } /* namespace fambogie */

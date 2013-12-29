@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <cstring>
+#include <cstdlib>
 
 using namespace std;
 
@@ -32,6 +33,10 @@ const char* listPlaylistsRequest = "{"
 const char* playPlaylistsRequest = "{\"Type\":\"Playlist\",\"TypeSpecific\":{\"Command\":\"PlayPlaylist\",\"PlaylistId\":6}}";
 
 int main(int argc, const char* argv[]) {
+	if(argc < 3) {
+		cout << "Not enough arguments. Usage: ./TestClient [ip] [port]" << endl;
+		return -1;
+	}
 	int sock;
 
 	if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
@@ -42,8 +47,8 @@ int main(int argc, const char* argv[]) {
 	struct sockaddr_in server;
 	memset(&server, 0, sizeof(server)); /* Clear struct */
 	server.sin_family = AF_INET; /* Internet/IP */
-	server.sin_addr.s_addr = inet_addr("127.0.0.1"); /* IP address */
-	server.sin_port = htons(6666); /* server port */
+	server.sin_addr.s_addr = inet_addr(argv[1]); /* IP address */
+	server.sin_port = htons(atoi(argv[2])); /* server port */
 
 	if (connect(sock, (struct sockaddr *) &server, sizeof(server)) < 0) {
 		cout << "Failed to connect with server" << endl;

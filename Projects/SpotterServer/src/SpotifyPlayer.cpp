@@ -15,7 +15,6 @@ namespace fambogie {
 SpotifyPlayer::SpotifyPlayer(sp_session* session) {
 	this->session = session;
 	this->currentTrack = nullptr;
-	this->nextTrack = nullptr;
 	audio_init(&audioFifo);
 }
 
@@ -23,13 +22,15 @@ SpotifyPlayer::~SpotifyPlayer() {
 	// TODO Auto-generated destructor stub
 }
 
-void SpotifyPlayer::playTrack(sp_track* track, sp_track* nextTrack) {
+void SpotifyPlayer::playTrack(sp_track* track) {
 	currentTrack = track;
-	this->nextTrack = nextTrack;
+	currentTrackEnded = false;
+	audio_fifo_flush(&audioFifo);
 	sp_session_player_load(session, currentTrack);
-	sp_session_player_seek(session, 40000);
 	sp_session_player_play(session, true);
-	sp_session_player_prefetch(session, nextTrack);
+	if (playQueue.size() > 0) {
+		sp_session_player_prefetch(session, playQueue.front());
+	}
 }
 
 int SpotifyPlayer::onMusicDelivery(const sp_audioformat* format,
@@ -72,19 +73,33 @@ void SpotifyPlayer::onEndOfTrack() {
 
 void SpotifyPlayer::tick() {
 	if (currentTrackEnded) {
-		if (nextTrack != nullptr) {
-			sp_session_player_load(session, nextTrack);
-			audio_fifo_flush(&audioFifo);
-			sp_session_player_play(session, true);
-			currentTrack = nextTrack;
-			nextTrack = nullptr;
+		if (playQueue.size() > 0) {
+			sp_track* track = playQueue.front();
+			playQueue.pop_front();
+			playTrack(track);
 		} else {
 			sp_session_player_unload(session);
 			audio_fifo_flush(&audioFifo);
 			currentTrack = nullptr;
 		}
-		currentTrackEnded = false;
 	}
+}
+
+void SpotifyPlayer::addTrackToQueue(sp_track* track) {
+	if (playQueue.size() == 0) {
+		if (currentTrack == nullptr || currentTrackEnded) {
+			playTrack(track);
+		} else {
+			sp_session_player_prefetch(session, track);
+			playQueue.push_back(track);
+		}
+	} else {
+		playQueue.push_back(track);
+	}
+}
+
+void SpotifyPlayer::clearPlayQueue() {
+	playQueue.clear();
 }
 
 } /* namespace fambogie */
