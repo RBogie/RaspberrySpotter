@@ -64,7 +64,7 @@ ClientResponse* SpotifyPlaylistContainer::playPlaylist(PlaylistTask* task) {
 		if(sp_playlist_num_tracks(playlist) > 0) {
 			sp_track* track = sp_playlist_track(playlist, 0);
 			sp_track* secondTrack = sp_playlist_track(playlist, 1);
-			spotifySession->getSpotifyPlayer()->playTrack(track);
+			spotifySession->getSpotifyPlayer()->playTrack(track, secondTrack);
 			response->setSuccess(true);
 			response->setMessage(nullptr);
 		} else {

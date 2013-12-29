@@ -19,16 +19,21 @@ public:
 	SpotifyPlayer(sp_session* session);
 	virtual ~SpotifyPlayer();
 
-	void playTrack(sp_track* track);
+	void playTrack(sp_track* track, sp_track* nextTrack);
 
 	int onMusicDelivery(const sp_audioformat* format, const void* frames,
 			int numFrames);
 	void onEndOfTrack();
+
+	void tick();
 private:
 	sp_session* session;
 	audio_fifo_t audioFifo;
 
+	bool currentTrackEnded = false;
+
 	sp_track* currentTrack;
+	sp_track* nextTrack;
 };
 
 } /* namespace fambogie */

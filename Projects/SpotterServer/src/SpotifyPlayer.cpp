@@ -15,6 +15,7 @@ namespace fambogie {
 SpotifyPlayer::SpotifyPlayer(sp_session* session) {
 	this->session = session;
 	this->currentTrack = nullptr;
+	this->nextTrack = nullptr;
 	audio_init(&audioFifo);
 }
 
@@ -22,11 +23,13 @@ SpotifyPlayer::~SpotifyPlayer() {
 	// TODO Auto-generated destructor stub
 }
 
-void SpotifyPlayer::playTrack(sp_track* track) {
+void SpotifyPlayer::playTrack(sp_track* track, sp_track* nextTrack) {
 	currentTrack = track;
+	this->nextTrack = nextTrack;
 	sp_session_player_load(session, currentTrack);
-	//sp_session_player_seek(session, 30000);
+	sp_session_player_seek(session, 40000);
 	sp_session_player_play(session, true);
+	sp_session_player_prefetch(session, nextTrack);
 }
 
 int SpotifyPlayer::onMusicDelivery(const sp_audioformat* format,
@@ -64,9 +67,24 @@ int SpotifyPlayer::onMusicDelivery(const sp_audioformat* format,
 
 void SpotifyPlayer::onEndOfTrack() {
 	logDebug("Track ended");
-	currentTrack == nullptr;
-	sp_session_player_unload(session);
-	audio_fifo_flush(&audioFifo);
+	currentTrackEnded = true;
+}
+
+void SpotifyPlayer::tick() {
+	if (currentTrackEnded) {
+		if (nextTrack != nullptr) {
+			sp_session_player_load(session, nextTrack);
+			audio_fifo_flush(&audioFifo);
+			sp_session_player_play(session, true);
+			currentTrack = nextTrack;
+			nextTrack = nullptr;
+		} else {
+			sp_session_player_unload(session);
+			audio_fifo_flush(&audioFifo);
+			currentTrack = nullptr;
+		}
+		currentTrackEnded = false;
+	}
 }
 
 } /* namespace fambogie */

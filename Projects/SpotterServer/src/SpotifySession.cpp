@@ -57,6 +57,11 @@ SpotifySession::~SpotifySession() {
 int SpotifySession::processEvents() {
 	int nextTimeOut;
 	sp_session_process_events(session, &nextTimeOut);
+
+	if(spotifyPlayer != nullptr) {
+		spotifyPlayer->tick();
+	}
+
 	return nextTimeOut;
 }
 
