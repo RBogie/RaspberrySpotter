@@ -10,6 +10,7 @@
 
 #include "Tasks/Task.hpp"
 #include "Responses/ClientResponse.hpp"
+#include "Responses/StatusResponse.hpp"
 
 namespace fambogie {
 
@@ -17,7 +18,6 @@ namespace MessageConversion {
 
 const char* getHandshakeInitiation();
 bool isHandshakeCorrect(const char* response);
-char* handshakeStatusToJson(bool error, const char* msg);
 
 Task* convertJsonToTask(const char* json);
 

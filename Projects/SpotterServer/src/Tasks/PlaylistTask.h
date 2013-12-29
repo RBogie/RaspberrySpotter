@@ -19,6 +19,7 @@ namespace fambogie {
 enum Command {
 	CommandUnknown,
 	CommandList,
+	CommandPlayPlaylist,
 };
 
 enum ListFlags {
@@ -30,6 +31,7 @@ enum ListFlags {
 
 union CommandInfo {
 	char ListFlags;
+	int playlist;
 };
 
 class PlaylistTask: public Task {

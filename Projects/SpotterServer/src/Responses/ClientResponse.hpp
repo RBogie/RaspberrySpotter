@@ -15,6 +15,7 @@ public:
 
 	enum Type {
 		Unknown,
+		Status,
 		List,
 	};
 

@@ -19,9 +19,12 @@ SpotifySession::SpotifySession(sp_session_config& config,
 		SpotifyRunner* runner) {
 	this->runner = runner;
 
+	spotifyPlayer = nullptr;
+	spotifyPlaylistContainer = nullptr;
+
 	callbacks.logged_in = &onLoginDispatch;
 	callbacks.notify_main_thread = &onMainThreadNotifiedDispatch;
-	callbacks.music_delivery = &onMusicDeliveredDispatch;
+	callbacks.music_delivery = &onMusicDeliveryDispatch;
 	callbacks.log_message = &onLogDispatch;
 	callbacks.end_of_track = &onEndOfTrackDispatch;
 
@@ -93,14 +96,17 @@ void SpotifySession::login(const char* username, const char* password,
 
 	if(loggedIn) {
 		logDebug("Logged in");
-		spotifyPlaylistContainer = new SpotifyPlaylistContainer(session);
+		spotifyPlayer = new SpotifyPlayer(session);
+		spotifyPlaylistContainer = new SpotifyPlaylistContainer(session, this);
 	}
 }
 
 void SpotifySession::logout() {
 	if(loggedIn) {
 		delete spotifyPlaylistContainer;
+		delete spotifyPlayer;
 		spotifyPlaylistContainer = nullptr;
+		spotifyPlayer = nullptr;
 	}
 	sp_session_logout(session);
 }
@@ -135,13 +141,23 @@ void SpotifySession::onMainThreadNotified() {
 	}
 }
 
-int SpotifySession::onMusicDelivered(const sp_audioformat* format,
+int SpotifySession::onMusicDelivery(const sp_audioformat* format,
 		const void* frames, int num_frames) {
-	logDebug("Music Delivered");
+	if(spotifyPlayer != nullptr) {
+		return spotifyPlayer->onMusicDelivery(format, frames, num_frames);
+	}
+	return 0;
 }
 
 void SpotifySession::onEndOfTrack() {
 	logDebug("Track ended");
+	if(spotifyPlayer != nullptr) {
+		return spotifyPlayer->onEndOfTrack();
+	}
+}
+
+SpotifyPlayer* SpotifySession::getSpotifyPlayer() {
+	return spotifyPlayer;
 }
 
 //Static dispatchers
@@ -167,14 +183,14 @@ void SpotifySession::onMainThreadNotifiedDispatch(sp_session* session) {
 	}
 }
 
-int SpotifySession::onMusicDeliveredDispatch(sp_session* session,
+int SpotifySession::onMusicDeliveryDispatch(sp_session* session,
 		const sp_audioformat* format, const void* frames, int num_frames) {
 
 	std::map<sp_session*, SpotifySession*>::iterator iterator =
 			sessionMapping.find(session);
 
 	if (iterator != sessionMapping.end()) {
-		iterator->second->onMusicDelivered(format, frames, num_frames);
+		iterator->second->onMusicDelivery(format, frames, num_frames);
 	} else {
 		logError("Could not find session: %p", (void*) session);
 	}

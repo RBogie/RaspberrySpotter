@@ -51,6 +51,7 @@ void TcpServer::listen() {
 			(socklen_t*) &c))) {
 		const char* message = MessageConversion::getHandshakeInitiation();
 		bool connectionRefused = false;
+		StatusResponse response(false, nullptr);
 		if (numCurrentConnections < maxConnections
 				&& send(clientSocket, message, strlen(message) + 1, 0) > 0) {
 			char messageBuffer[500];
@@ -59,7 +60,8 @@ void TcpServer::listen() {
 				assert(messageBuffer[received - 1] == '\0');
 				if (MessageConversion::isHandshakeCorrect(messageBuffer)) {
 					logDebug("Connection accepted");
-					message = MessageConversion::handshakeStatusToJson(false, nullptr);
+					response.setSuccess(true);
+					message = MessageConversion::convertResponseToJson(&response);
 					if (send(clientSocket, message, strlen(message) + 1, 0)
 							> 0) {
 						TcpConnection* connection = new TcpConnection(
@@ -70,19 +72,22 @@ void TcpServer::listen() {
 					}
 					delete message;
 				} else {
-					message = MessageConversion::handshakeStatusToJson(true, "Handshake incorrect.");
+					response.setMessage("Handshake incorrect.");
+					message = MessageConversion::convertResponseToJson(&response);
 					send(clientSocket, message, strlen(message) + 1, 0);
 					delete message;
 					connectionRefused = true;
 				}
 			} else {
-				message = MessageConversion::handshakeStatusToJson(true, "Error during receiving of message");
+				response.setMessage("Error during receiving of message");
+				message = MessageConversion::convertResponseToJson(&response);
 				send(clientSocket, message, strlen(message) + 1, 0);
 				delete message;
 				connectionRefused = true;
 			}
 		} else {
-			message = MessageConversion::handshakeStatusToJson(true, "Too many connections");
+			response.setMessage("Too many connections");
+			message = MessageConversion::convertResponseToJson(&response);
 			send(clientSocket, message, strlen(message) + 1, 0);
 			delete message;
 			connectionRefused = true;

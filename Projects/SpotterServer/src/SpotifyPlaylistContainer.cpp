@@ -28,8 +28,9 @@ static void container_loaded(sp_playlistcontainer *pc, void *userdata) {
 			sp_playlistcontainer_num_playlists(pc));
 }
 
-SpotifyPlaylistContainer::SpotifyPlaylistContainer(sp_session* session) {
+SpotifyPlaylistContainer::SpotifyPlaylistContainer(sp_session* session, SpotifySession* spotifySession) {
 	this->session = session;
+	this->spotifySession = spotifySession;
 	playlistContainer = sp_session_playlistcontainer(session);
 
 	sp_playlistcontainer_callbacks playlistCallbacks;
@@ -43,12 +44,34 @@ SpotifyPlaylistContainer::SpotifyPlaylistContainer(sp_session* session) {
 }
 
 ClientResponse* SpotifyPlaylistContainer::processTask(PlaylistTask* task) {
-	ClientResponse* response = nullptr;
 	switch (task->getCommand()) {
 	case CommandList:
 		return listPlaylists(task);
 		break;
+	case CommandPlayPlaylist:
+		return playPlaylist(task);
+		break;
 	}
+	return nullptr;
+}
+
+ClientResponse* SpotifyPlaylistContainer::playPlaylist(PlaylistTask* task) {
+	StatusResponse* response = new StatusResponse(false, "Playlist Id is out of range!");
+
+	int playlistNum = task->getCommandInfo().playlist;
+	if(playlistNum >= 0 && playlistNum < sp_playlistcontainer_num_playlists(playlistContainer)) {
+		sp_playlist* playlist = sp_playlistcontainer_playlist(playlistContainer, playlistNum);
+		if(sp_playlist_num_tracks(playlist) > 0) {
+			sp_track* track = sp_playlist_track(playlist, 0);
+			sp_track* secondTrack = sp_playlist_track(playlist, 1);
+			spotifySession->getSpotifyPlayer()->playTrack(track);
+			response->setSuccess(true);
+			response->setMessage(nullptr);
+		} else {
+			response->setMessage("Playlist does not have any tracks");
+		}
+	}
+
 	return response;
 }
 
@@ -57,9 +80,9 @@ ListResponse<PlaylistInfo*>* SpotifyPlaylistContainer::listPlaylists(
 	ListResponse<PlaylistInfo*>* response = new ListResponse<PlaylistInfo*>();
 	response->setListType(ListTypePlaylist);
 	CommandInfo info = task->getCommandInfo();
-	bool sendName			= (info.ListFlags & Name == Name);
-	bool sendNumTracks		= (info.ListFlags & NumTracks == NumTracks);
-	bool sendDescription	= (info.ListFlags & Description == Description);
+	bool sendName			= ((info.ListFlags & Name) == Name);
+	bool sendNumTracks		= ((info.ListFlags & NumTracks) == NumTracks);
+	bool sendDescription	= ((info.ListFlags & Description) == Description);
 
 	int numPlaylists = sp_playlistcontainer_num_playlists(playlistContainer);
 	for (int i = 0; i < numPlaylists; i++) {

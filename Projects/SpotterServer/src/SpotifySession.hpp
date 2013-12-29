@@ -19,6 +19,7 @@ class SpotifySession;
 }
 #include "Tasks/Task.hpp"
 #include "SpotifyRunner.hpp"
+#include "SpotifyPlayer.hpp"
 #include "SpotifyPlaylistContainer.hpp"
 #include "Responses/ClientResponse.hpp"
 namespace fambogie {
@@ -62,6 +63,8 @@ public:
 	 */
 	ClientResponse* processTask(Task* task);
 
+	SpotifyPlayer* getSpotifyPlayer();
+
 	/**
 	 * Destructor
 	 */
@@ -70,13 +73,13 @@ public:
 private:
 	void onLogin(sp_error error);
 	void onMainThreadNotified();
-	int onMusicDelivered(const sp_audioformat* format, const void* frames,
+	int onMusicDelivery(const sp_audioformat* format, const void* frames,
 			int num_frames);
 	void onEndOfTrack();
 
 	static void onLoginDispatch(sp_session *session, sp_error error);
 	static void onMainThreadNotifiedDispatch(sp_session* session);
-	static int onMusicDeliveredDispatch(sp_session* session,
+	static int onMusicDeliveryDispatch(sp_session* session,
 			const sp_audioformat* format, const void* frames, int num_frames);
 	static void onLogDispatch(sp_session* session, const char* data);
 	static void onEndOfTrackDispatch(sp_session* session);
@@ -88,6 +91,7 @@ private:
 	bool loggedIn;
 	bool errorOcurred;
 
+	SpotifyPlayer* spotifyPlayer;
 	SpotifyPlaylistContainer* spotifyPlaylistContainer;
 
 	static std::map<sp_session*, SpotifySession*> sessionMapping;

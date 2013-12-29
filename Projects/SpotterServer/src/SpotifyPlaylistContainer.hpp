@@ -16,22 +16,30 @@ class PlaylistTask;
 #include <map>
 #include <libspotify/api.h>
 
+namespace fambogie {
+class SpotifyPlaylistContainer;
+}
+
 #include "Responses/ClientResponse.hpp"
 #include "Responses/ListResponse.hpp"
+#include "Responses/StatusResponse.hpp"
 #include "Responses/ResponseStructures.hpp"
+#include "SpotifySession.hpp"
 
 namespace fambogie {
 
 class SpotifyPlaylistContainer {
 public:
-	SpotifyPlaylistContainer(sp_session* session);
+	SpotifyPlaylistContainer(sp_session* session, SpotifySession* spotifySession);
 	virtual ~SpotifyPlaylistContainer();
 
 	ClientResponse* processTask(PlaylistTask* task);
 
+	ClientResponse* playPlaylist(PlaylistTask* task);
 	ListResponse<PlaylistInfo*>* listPlaylists(PlaylistTask* task);
 private:
 	sp_session* session;
+	SpotifySession* spotifySession;
 	sp_playlistcontainer* playlistContainer;
 	sp_playlistcontainer_callbacks playlistCallbacks;
 

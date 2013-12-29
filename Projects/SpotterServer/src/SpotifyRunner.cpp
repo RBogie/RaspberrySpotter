@@ -31,7 +31,8 @@ void SpotifyRunner::run() {
 	}
 
 	while (!threadShouldStop) {
-		int loopTimeout = spotifySession->processEvents();
+		int loopTimeout = 100;
+		spotifySession->processEvents();
 		if (loopTimeout == 0) {
 			mainLoopCondition.wait();
 			processTasks();

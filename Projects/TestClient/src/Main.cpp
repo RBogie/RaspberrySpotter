@@ -17,14 +17,19 @@ const char* handshakeResponse = "{"
 		"\"ProtocolVersion\": 1"
 		"}";
 
-const char* expectedHandshakeStatus = "{\"Status\":\"Ok\"}";
+const char* expectedHandshakeStatus = "{\"Type\":\"Status\",\"TypeSpecific\":{\"Status\":\"Ok\"}}";
 
 const char* listPlaylistsRequest = "{"
 		"\"Type\": \"Playlist\","
 		"\"TypeSpecific\": {"
-		"\"Command\": \"List\""
+			"\"Command\": \"List\","
+			"\"CommandInfo\": ["
+				"\"Name\",\"NumTracks\""
+		    "]"
 		"}"
 		"}";
+
+const char* playPlaylistsRequest = "{\"Type\":\"Playlist\",\"TypeSpecific\":{\"Command\":\"PlayPlaylist\",\"PlaylistId\":6}}";
 
 int main(int argc, const char* argv[]) {
 	int sock;
@@ -82,6 +87,13 @@ int main(int argc, const char* argv[]) {
 	if (receiveSize > 0) {
 		cout << messageBuff << endl;
 	}
+
+	send(sock, playPlaylistsRequest, strlen(playPlaylistsRequest) + 1, 0);
+
+		receiveSize = recv(sock, messageBuff, 5000, 0);
+		if (receiveSize > 0) {
+			cout << messageBuff << endl;
+		}
 
 	shutdown(sock, SHUT_RDWR);
 	return 0;

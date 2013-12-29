@@ -15,6 +15,7 @@
 #include "Tasks/PlaylistTask.h"
 
 #include "Responses/ListResponse.hpp"
+#include "Responses/StatusResponse.hpp"
 
 using namespace rapidjson;
 
@@ -40,23 +41,34 @@ bool isHandshakeCorrect(const char* response) {
 	return false;
 }
 
-char* handshakeStatusToJson(bool error, const char* msg) {
+char* convertStatusResponseToJson(StatusResponse* response) {
 	Document d;
 	d.SetObject();
-	Value status(error ? "Error" : "Ok");
-	d.AddMember("Status", status, d.GetAllocator());
-	Value errorMsg;
-	if (error && msg != nullptr) {
-		errorMsg = msg;
-		d.AddMember("ErrorMessage", errorMsg, d.GetAllocator());
+
+	Value type("Status");
+	d.AddMember("Type", type, d.GetAllocator());
+
+	Value typeSpecific;
+	typeSpecific.SetObject();
+
+	Value status(response->isSuccess() ? "Ok" : "Error");
+	typeSpecific.AddMember("Status", status, d.GetAllocator());
+	const char* msg = response->getMessage();
+	if (msg != nullptr) {
+		Value message(msg);
+		typeSpecific.AddMember("Message", message, d.GetAllocator());
 	}
+
+	d.AddMember("TypeSpecific", typeSpecific, d.GetAllocator());
+
 	StringBuffer buffer;
 	Writer<StringBuffer> writer(buffer);
 	d.Accept(writer);
 	int size = buffer.Size();
 	const char* message = buffer.GetString();
-	char* newMessage = new char[buffer.Size()];
+	char* newMessage = new char[buffer.Size() + 1];
 	memcpy(newMessage, message, buffer.Size());
+	newMessage[buffer.Size()] = '\0';
 	return newMessage;
 }
 
@@ -71,12 +83,13 @@ Task* convertJsonToTask(const char* json) {
 				if (typeSpecific.HasMember("Command")) {
 					PlaylistTask* task = new PlaylistTask();
 					const char* command = typeSpecific["Command"].GetString();
+					CommandInfo commandInfo;
 					if (strcasecmp(command, "List") == 0) {
 						task->setCommand(CommandList);
+						commandInfo.ListFlags = 0;
 						if (typeSpecific.HasMember("CommandInfo")) {
 							const Value& info = typeSpecific["CommandInfo"];
 							if (info.IsArray()) {
-								CommandInfo commandInfo;
 								for (SizeType i = 0; i < info.Size(); i++) {
 									const char* temp = info[i].GetString();
 									if (strcasecmp(temp, "Name") == 0) {
@@ -92,13 +105,27 @@ Task* convertJsonToTask(const char* json) {
 										commandInfo.ListFlags |= Image;
 									}
 								}
-								task->setCommandInfo(commandInfo);
+
 							}
+						}
+					} else if (strcasecmp(command, "PlayPlaylist") == 0) {
+						task->setCommand(CommandPlayPlaylist);
+						if (typeSpecific.HasMember("PlaylistId")) {
+							const Value& info = typeSpecific["PlaylistId"];
+							if (info.IsInt()) {
+								commandInfo.playlist = info.GetInt();
+							} else {
+								logError(
+										"convertJsonToTask: incorrect PlaylistID");
+							}
+						} else {
+							logError("convertJsonToTask: missing PlaylistID");
 						}
 					} else {
 						logError(
 								"convertJsonToTask: Unknown (playlist) command!");
 					}
+					task->setCommandInfo(commandInfo);
 					return dynamic_cast<Task*>(task);
 				} else {
 					logError(
@@ -152,8 +179,7 @@ char* convertListPlaylistInfoToJson(ListResponse<PlaylistInfo*>* response) {
 		if (info->numTracks > -1) {
 			infoAvailable = true;
 			Value numTracks(info->numTracks);
-			playlistInfo.AddMember("NumTracks", numTracks,
-					d.GetAllocator());
+			playlistInfo.AddMember("NumTracks", numTracks, d.GetAllocator());
 		}
 		if (info->description != nullptr) {
 			infoAvailable = true;
@@ -175,8 +201,9 @@ char* convertListPlaylistInfoToJson(ListResponse<PlaylistInfo*>* response) {
 	d.Accept(writer);
 	int size = buffer.Size();
 	const char* message = buffer.GetString();
-	char* newMessage = new char[buffer.Size()];
+	char* newMessage = new char[buffer.Size() + 1];
 	memcpy(newMessage, message, buffer.Size());
+	newMessage[buffer.Size()] = '\0';
 	return newMessage;
 }
 
@@ -194,8 +221,13 @@ char* convertResponseToJson(ClientResponse* response) {
 		default:
 			logError("Unknown listtype");
 		}
+
+		break;
 	}
 		break;
+	case ClientResponse::Status:
+		return convertStatusResponseToJson(
+				dynamic_cast<StatusResponse*>(response));
 	default:
 		logError("Unknown ClientResponse type");
 	}

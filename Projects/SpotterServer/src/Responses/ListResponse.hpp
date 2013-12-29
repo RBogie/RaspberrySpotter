@@ -19,7 +19,7 @@ enum ListType {
 	};
 
 template<class T>
-class ListResponse : public fambogie::ClientResponse {
+class ListResponse : public ClientResponse {
 public:
 
 	ListResponse() : ClientResponse(List), listType(ListTypeUnknown){}

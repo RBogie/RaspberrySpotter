@@ -4,6 +4,7 @@ set(SOURCE
 	src/Main.cpp
 	src/MessageConversion.cpp
 	src/Logging.cpp
+	src/SpotifyPlayer.cpp
 	src/SpotifyPlaylistContainer.cpp
 	src/SpotifyRunner.cpp
 	src/SpotifySession.cpp
