@@ -11,6 +11,7 @@
 #include <cerrno>
 
 #include "ThreadingUtils.hpp"
+#include "TcpConnection.hpp"
 
 namespace fambogie {
 
@@ -37,17 +38,11 @@ void SpotifyRunner::run() {
 			mainLoopCondition.wait();
 			processTasks();
 		} else {
-//				logDebug("LoopTimeout: %d", loopTimeout);
 			timespec timeout = fambogie::getPthreadTimeout(loopTimeout);
 			switch (mainLoopCondition.wait(&timeout)) {
 			case 0:
 				//Since we got a notification, we try to process everything from the jobqueue.
 				processTasks();
-				break;
-			case EINVAL:
-//					logError("Invalid parameters: %p, %p, (sec=%d, nsec=%d)",
-//							&mainLoopCondition, &mainLoopConditionMutex,
-//							timeout.tv_sec, timeout.tv_nsec);
 				break;
 			default:
 				break;

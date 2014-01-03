@@ -12,7 +12,7 @@
 
 #define DEBUG 1
 
-#define nullptr NULL
+#define nullptr 0
 
 typedef unsigned short uint16;
 typedef unsigned int uint32;

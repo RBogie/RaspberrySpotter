@@ -122,8 +122,13 @@ ClientResponse* SpotifySession::processTask(Task* task) {
 	case TaskTypePlaylist:
 		response = spotifyPlaylistContainer->processTask(dynamic_cast<PlaylistTask*>(task));
 		break;
+	case TaskTypePlayer:
+		response = spotifyPlayer->processTask(dynamic_cast<PlayerTask*>(task));
+		break;
 	default:
+		//Should never happen
 		logError("Received unknown command");
+		response = new StatusResponse(false, "Unknown command");
 	}
 	delete task;
 	return response;

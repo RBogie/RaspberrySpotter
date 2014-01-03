@@ -15,8 +15,9 @@ set(SOURCE
 	src/SpotifyAlsa/audio.cpp
 	src/SpotifyAlsa/alsa-audio.cpp
 	src/Responses/ClientResponse.cpp
-	src/Tasks/Task.cpp
-	src/Tasks/PlaylistTask.cpp)
+	src/Tasks/PlayerTask.cpp
+	src/Tasks/PlaylistTask.cpp
+	src/Tasks/Task.cpp)
 
 add_executable(SpotterServer ${SOURCE})
 target_link_libraries(SpotterServer ${LIBSPOTIFY_LIBRARIES})

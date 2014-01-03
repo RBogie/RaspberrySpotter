@@ -10,11 +10,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "Tasks/PlayerTask.hpp"
+#include "Responses/StatusResponse.hpp"
+
 namespace fambogie {
 
 SpotifyPlayer::SpotifyPlayer(sp_session* session) {
 	this->session = session;
 	this->currentTrack = nullptr;
+	this->currentTrackEnded = false;
 	audio_init(&audioFifo);
 }
 
@@ -100,6 +104,36 @@ void SpotifyPlayer::addTrackToQueue(sp_track* track) {
 
 void SpotifyPlayer::clearPlayQueue() {
 	playQueue.clear();
+}
+
+ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
+	StatusResponse* response = new StatusResponse(false, "Unknown command");
+	switch (task->getCommand()) {
+	case PlayerCommandPlay:
+		if (currentTrack != nullptr && !currentTrackEnded) {
+			sp_session_player_play(session, true);
+			response->setMessage(nullptr);
+			response->setSuccess(true);
+		} else {
+			response->setMessage("No track to play");
+		}
+		break;
+	case PlayerCommandPause:
+		sp_session_player_play(session, false);
+		response->setMessage(nullptr);
+		response->setSuccess(true);
+		break;
+	case PlayerCommandSeek:
+		if (currentTrack != nullptr && !currentTrackEnded) {
+			sp_session_player_seek(session, task->getCommandInfo().seekPosition);
+			response->setMessage(nullptr);
+			response->setSuccess(true);
+		} else {
+			response->setMessage("No track currently playing");
+		}
+		break;
+	}
+	return response;
 }
 
 } /* namespace fambogie */

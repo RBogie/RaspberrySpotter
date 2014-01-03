@@ -12,6 +12,10 @@
 #include <list>
 #include <libspotify/api.h>
 #include "SpotifyAlsa/audio.h"
+
+#include "Tasks/PlayerTask.hpp"
+#include "Responses/ClientResponse.hpp"
+
 namespace fambogie {
 
 class SpotifyPlayer {
@@ -28,11 +32,14 @@ public:
 	void onEndOfTrack();
 
 	void tick();
+
+	ClientResponse* processTask(PlayerTask* task);
+
 private:
 	sp_session* session;
 	audio_fifo_t audioFifo;
 
-	bool currentTrackEnded = false;
+	bool currentTrackEnded;
 
 	sp_track* currentTrack;
 	std::list<sp_track*> playQueue;

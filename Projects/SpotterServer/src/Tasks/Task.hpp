@@ -5,15 +5,15 @@
 
 namespace fambogie {
 class Task;
+class TcpConnection; //Ugly hack...
 }
-
-#include "../TcpConnection.hpp"
 
 namespace fambogie {
 
 enum TaskType {
 	TaskTypeUnknown,
 	TaskTypePlaylist,
+	TaskTypePlayer,
 };
 
 class Task {

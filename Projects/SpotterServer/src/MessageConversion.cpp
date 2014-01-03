@@ -12,9 +12,13 @@
 #include "rapidjson/writer.h"
 
 #include "MessageConversion.hpp"
+#include "Tasks/Task.hpp"
+#include "Tasks/PlayerTask.hpp"
 #include "Tasks/PlaylistTask.h"
 
+#include "Responses/ClientResponse.hpp"
 #include "Responses/ListResponse.hpp"
+#include "Responses/ResponseStructures.hpp"
 #include "Responses/StatusResponse.hpp"
 
 using namespace rapidjson;
@@ -124,6 +128,8 @@ Task* convertJsonToTask(const char* json) {
 					} else {
 						logError(
 								"convertJsonToTask: Unknown (playlist) command!");
+						delete task;
+						return nullptr;
 					}
 					task->setCommandInfo(commandInfo);
 					return dynamic_cast<Task*>(task);
@@ -131,6 +137,35 @@ Task* convertJsonToTask(const char* json) {
 					logError(
 							"convertJsonToTask: No playlist command available!");
 					return nullptr;
+				}
+			} else if (strcasecmp(type, "Player") == 0) {
+				if (typeSpecific.HasMember("Command")) {
+					PlayerTask* task = new PlayerTask();
+					const char* command = typeSpecific["Command"].GetString();
+					if (strcasecmp(command, "Play") == 0) {
+						task->setCommand(PlayerCommandPlay);
+					} else if (strcasecmp(command, "Pause") == 0) {
+						task->setCommand(PlayerCommandPause);
+					} else if (strcasecmp(command, "Seek") == 0) {
+						task->setCommand(PlayerCommandSeek);
+						PlayerCommandInfo info;
+						info.seekPosition = 0;
+						if(typeSpecific.HasMember("SeekPosition") & typeSpecific["SeekPosition"].IsInt()) {
+							info.seekPosition = typeSpecific["SeekPosition"].GetInt();
+							if(info.seekPosition < 0) {
+								info.seekPosition = 0;
+							}
+						}
+						task->setCommandInfo(info);
+					} else {
+						logError(
+								"convertJsonToTask: Unknown (player) command!");
+						delete task;
+						return nullptr;
+					}
+					return task;
+				} else {
+					logError("convertJsonToTask: No command supplied");
 				}
 			} else {
 				logError("convertJsonToTask: Unknown type!");

@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <cstring>
 #include <cstdlib>
+#include <unistd.h>
 
 using namespace std;
 
@@ -18,22 +19,30 @@ const char* handshakeResponse = "{"
 		"\"ProtocolVersion\": 1"
 		"}";
 
-const char* expectedHandshakeStatus = "{\"Type\":\"Status\",\"TypeSpecific\":{\"Status\":\"Ok\"}}";
+const char* expectedHandshakeStatus =
+		"{\"Type\":\"Status\",\"TypeSpecific\":{\"Status\":\"Ok\"}}";
 
 const char* listPlaylistsRequest = "{"
 		"\"Type\": \"Playlist\","
 		"\"TypeSpecific\": {"
-			"\"Command\": \"List\","
-			"\"CommandInfo\": ["
-				"\"Name\",\"NumTracks\""
-		    "]"
+		"\"Command\": \"List\","
+		"\"CommandInfo\": ["
+		"\"Name\",\"NumTracks\""
+		"]"
 		"}"
 		"}";
 
-const char* playPlaylistsRequest = "{\"Type\":\"Playlist\",\"TypeSpecific\":{\"Command\":\"PlayPlaylist\",\"PlaylistId\":6}}";
+const char* playPlaylistsRequest =
+		"{\"Type\":\"Playlist\",\"TypeSpecific\":{\"Command\":\"PlayPlaylist\",\"PlaylistId\":14}}";
+const char* playerPauseRequest =
+		"{\"Type\":\"Player\",\"TypeSpecific\":{\"Command\":\"Pause\"}}";
+const char* playerPlayRequest =
+		"{\"Type\":\"Player\",\"TypeSpecific\":{\"Command\":\"Play\"}}";
+const char* playerSeekRequest =
+		"{\"Type\":\"Player\",\"TypeSpecific\":{\"Command\":\"Seek\", \"SeekPosition\":30000}}";
 
 int main(int argc, const char* argv[]) {
-	if(argc < 3) {
+	if (argc < 3) {
 		cout << "Not enough arguments. Usage: ./TestClient [ip] [port]" << endl;
 		return -1;
 	}
@@ -95,10 +104,32 @@ int main(int argc, const char* argv[]) {
 
 	send(sock, playPlaylistsRequest, strlen(playPlaylistsRequest) + 1, 0);
 
-		receiveSize = recv(sock, messageBuff, 5000, 0);
-		if (receiveSize > 0) {
-			cout << messageBuff << endl;
-		}
+	receiveSize = recv(sock, messageBuff, 5000, 0);
+	if (receiveSize > 0) {
+		cout << messageBuff << endl;
+	}
+
+//	sleep(5);
+//
+//	send(sock, playerPauseRequest, strlen(playerPauseRequest) + 1, 0);
+//	receiveSize = recv(sock, messageBuff, 5000, 0);
+//	if (receiveSize > 0) {
+//		cout << messageBuff << endl;
+//	}
+//	sleep(5);
+//
+//	send(sock, playerPlayRequest, strlen(playerPlayRequest) + 1, 0);
+//	receiveSize = recv(sock, messageBuff, 5000, 0);
+//	if (receiveSize > 0) {
+//		cout << messageBuff << endl;
+//	}
+//	sleep(5);
+//
+//	send(sock, playerSeekRequest, strlen(playerSeekRequest) + 1, 0);
+//	receiveSize = recv(sock, messageBuff, 5000, 0);
+//	if (receiveSize > 0) {
+//		cout << messageBuff << endl;
+//	}
 
 	shutdown(sock, SHUT_RDWR);
 	return 0;
