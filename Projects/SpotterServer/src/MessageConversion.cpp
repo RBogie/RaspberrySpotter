@@ -28,7 +28,7 @@ namespace MessageConversion {
 
 const char* getHandshakeInitiation() {
 	return "{"
-			"ServerName\": \"SpotterServer\","
+			"\"ServerName\": \"SpotterServer\","
 			"\"ProtocolVersion\": 1"
 			"}";
 }
@@ -68,7 +68,6 @@ char* convertStatusResponseToJson(StatusResponse* response) {
 	StringBuffer buffer;
 	Writer<StringBuffer> writer(buffer);
 	d.Accept(writer);
-	int size = buffer.Size();
 	const char* message = buffer.GetString();
 	char* newMessage = new char[buffer.Size() + 1];
 	memcpy(newMessage, message, buffer.Size());
@@ -234,9 +233,8 @@ char* convertListPlaylistInfoToJson(ListResponse<PlaylistInfo*>* response) {
 	StringBuffer buffer;
 	Writer<StringBuffer> writer(buffer);
 	d.Accept(writer);
-	int size = buffer.Size();
 	const char* message = buffer.GetString();
-	char* newMessage = new char[buffer.Size() + 1];
+	char* newMessage = new char[buffer.Size()+1];
 	memcpy(newMessage, message, buffer.Size());
 	newMessage[buffer.Size()] = '\0';
 	return newMessage;

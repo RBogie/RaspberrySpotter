@@ -35,6 +35,7 @@ void SpotifyPlayer::playTrack(sp_track* track) {
 	if (playQueue.size() > 0) {
 		sp_session_player_prefetch(session, playQueue.front());
 	}
+	logDebug("Now playing: %s", sp_track_name(track));
 }
 
 int SpotifyPlayer::onMusicDelivery(const sp_audioformat* format,
@@ -85,6 +86,7 @@ void SpotifyPlayer::tick() {
 			sp_session_player_unload(session);
 			audio_fifo_flush(&audioFifo);
 			currentTrack = nullptr;
+			logDebug("No next track!");
 		}
 	}
 }

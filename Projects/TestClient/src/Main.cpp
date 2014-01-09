@@ -10,7 +10,7 @@
 using namespace std;
 
 const char* expectedHandshakeMessage = "{"
-		"ServerName\": \"SpotterServer\","
+		"\"ServerName\": \"SpotterServer\","
 		"\"ProtocolVersion\": 1"
 		"}";
 
@@ -33,13 +33,42 @@ const char* listPlaylistsRequest = "{"
 		"}";
 
 const char* playPlaylistsRequest =
-		"{\"Type\":\"Playlist\",\"TypeSpecific\":{\"Command\":\"PlayPlaylist\",\"PlaylistId\":14}}";
+		"{\"Type\":\"Playlist\",\"TypeSpecific\":{\"Command\":\"PlayPlaylist\",\"PlaylistId\":20}}";
 const char* playerPauseRequest =
 		"{\"Type\":\"Player\",\"TypeSpecific\":{\"Command\":\"Pause\"}}";
 const char* playerPlayRequest =
 		"{\"Type\":\"Player\",\"TypeSpecific\":{\"Command\":\"Play\"}}";
 const char* playerSeekRequest =
 		"{\"Type\":\"Player\",\"TypeSpecific\":{\"Command\":\"Seek\", \"SeekPosition\":30000}}";
+
+char* receiveMessage(int socket) {
+	int networkOrderMessageSize;
+	int receiveSize = recv(socket, &networkOrderMessageSize, sizeof(int), 0);
+	int messageSize = ntohl(networkOrderMessageSize);
+	if (receiveSize == sizeof(int) && messageSize > 0
+			&& messageSize < 8192) {
+		char* message = new char[messageSize + 1];
+		receiveSize = recv(socket, message, messageSize, 0);
+		message[messageSize] = '\0';
+		if (receiveSize == messageSize) {
+			return message;
+		} else {
+			delete[] message;
+		}
+	}
+	return NULL;
+}
+
+bool sendMessage(int socket, const char* data) {
+	int messageSize = strlen(data);
+	int networkOrderMessageSize = htonl(messageSize);
+	if (send(socket, &networkOrderMessageSize, sizeof(int), 0) == 4) {
+		if (send(socket, data, messageSize, 0) > 0) {
+			return true;
+		}
+	}
+	return false;
+}
 
 int main(int argc, const char* argv[]) {
 	if (argc < 3) {
@@ -60,53 +89,56 @@ int main(int argc, const char* argv[]) {
 	server.sin_port = htons(atoi(argv[2])); /* server port */
 
 	if (connect(sock, (struct sockaddr *) &server, sizeof(server)) < 0) {
-		cout << "Failed to connect with server" << endl;
+		cerr << "Failed to connect with server" << endl;
 		return -1;
 	}
 
-	bool error = false;
-
-	char messageBuff[5000];
-	int receiveSize = recv(sock, messageBuff, 5000, 0);
-	if (receiveSize > 0) {
-		if (strcmp(messageBuff, expectedHandshakeMessage) == 0) {
-			send(sock, handshakeResponse, strlen(handshakeResponse) + 1, 0);
+	char* message = receiveMessage(sock);
+	if (message != NULL) {
+		if (strcmp(message, expectedHandshakeMessage) == 0) {
+			if (!sendMessage(sock, handshakeResponse)) {
+				delete[] message;
+				return -1;
+				cerr << "Error during sending" << endl;
+			}
 		} else {
-			cout << "Received handshake is incorrect" << endl;
+			cerr << "Received handshake is incorrect" << endl;
 		}
+		delete[] message;
+		message = NULL;
 	} else {
-		cout << "Error during receive" << endl;
-	}
-
-	if (error) {
+		cerr << "Error during receive" << endl;
+		delete[] message;
 		return -1;
 	}
 
-	receiveSize = recv(sock, messageBuff, 5000, 0);
-	if (receiveSize > 0) {
-		if (strcmp(messageBuff, expectedHandshakeStatus) == 0) {
+	message = receiveMessage(sock);
+	if (message != NULL) {
+		if (strcmp(message, expectedHandshakeStatus) == 0) {
 			cout << "Handshake Complete" << endl;
 		} else {
-			cout << "Handshake failed" << endl;
-			error = true;
+			cerr << "Handshake failed" << endl;
+			delete[] message;
+			return -1;
 		}
+		delete[] message;
+		message = NULL;
 	} else {
-		cout << "Error during receive" << endl;
-		error = true;
+		cerr << "Error during receive" << endl;
 	}
 
-	send(sock, listPlaylistsRequest, strlen(listPlaylistsRequest) + 1, 0);
+	sendMessage(sock, listPlaylistsRequest);
 
-	receiveSize = recv(sock, messageBuff, 5000, 0);
-	if (receiveSize > 0) {
-		cout << messageBuff << endl;
+	message = receiveMessage(sock);
+	if (message != NULL) {
+		cout << message << endl;
 	}
 
-	send(sock, playPlaylistsRequest, strlen(playPlaylistsRequest) + 1, 0);
+	sendMessage(sock, playPlaylistsRequest);
 
-	receiveSize = recv(sock, messageBuff, 5000, 0);
-	if (receiveSize > 0) {
-		cout << messageBuff << endl;
+	message = receiveMessage(sock);
+	if (message != NULL) {
+		cout << message << endl;
 	}
 
 //	sleep(5);

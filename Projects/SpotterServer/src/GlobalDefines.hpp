@@ -26,8 +26,6 @@ typedef float float32;
 typedef double float64;
 typedef long double float96;
 
-#define RECEIVE_BUFF_SIZE 500
-
 void logError(const char *format, ...);
 
 void logDebug(const char *format, ...);

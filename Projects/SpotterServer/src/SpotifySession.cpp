@@ -145,7 +145,6 @@ void SpotifySession::onLogin(sp_error error) {
 }
 
 void SpotifySession::onMainThreadNotified() {
-	logDebug("Mainthread notified");
 	if (loggedIn) {
 		runner->notify();
 	}
@@ -160,7 +159,6 @@ int SpotifySession::onMusicDelivery(const sp_audioformat* format,
 }
 
 void SpotifySession::onEndOfTrack() {
-	logDebug("Track ended");
 	if(spotifyPlayer != nullptr) {
 		return spotifyPlayer->onEndOfTrack();
 	}

@@ -24,8 +24,6 @@ static void playlist_moved(sp_playlistcontainer *pc, sp_playlist *playlist,
 }
 
 static void container_loaded(sp_playlistcontainer *pc, void *userdata) {
-	logDebug("jukebox: Rootlist synchronized (%d playlists)\n",
-			sp_playlistcontainer_num_playlists(pc));
 }
 
 SpotifyPlaylistContainer::SpotifyPlaylistContainer(sp_session* session, SpotifySession* spotifySession) {

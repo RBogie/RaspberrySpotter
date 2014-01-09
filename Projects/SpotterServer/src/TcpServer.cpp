@@ -16,6 +16,34 @@
 
 namespace fambogie {
 
+bool sendMessage(int clientSocket, const char* message) {
+	int32 messageSize = strlen(message);
+	int32 networkOrderMessageSize = htonl(messageSize);
+	if (send(clientSocket, &networkOrderMessageSize, sizeof(int32), 0) == 4) {
+		if (send(clientSocket, message, messageSize, 0) > 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+char* receiveMessage(int socket) {
+	int32 networkOrderMessageSize;
+	int receiveSize = recv(socket, &networkOrderMessageSize, sizeof(int32), 0);
+	int32 messageSize = ntohl(networkOrderMessageSize);
+	if (receiveSize == sizeof(int32) && messageSize > 0 && messageSize < 8192) {
+		char* message = new char[messageSize + 1];
+		receiveSize = recv(socket, message, messageSize, 0);
+		message[messageSize] = '\0';
+		if (receiveSize == messageSize) {
+			return message;
+		} else {
+			delete[] message;
+		}
+	}
+	return nullptr;
+}
+
 TcpServer::TcpServer(uint16 port, int maxConnections,
 		SpotifyRunner* spotifyRunner) {
 	this->spotifyRunner = spotifyRunner;
@@ -53,43 +81,43 @@ void TcpServer::listen() {
 		bool connectionRefused = false;
 		StatusResponse response(false, nullptr);
 		if (numCurrentConnections < maxConnections
-				&& send(clientSocket, message, strlen(message) + 1, 0) > 0) {
-			char messageBuffer[500];
-			int received;
-			if ((received = recv(clientSocket, &messageBuffer, 500, 0)) > 0) {
-				assert(messageBuffer[received - 1] == '\0');
-				if (MessageConversion::isHandshakeCorrect(messageBuffer)) {
+				&& sendMessage(clientSocket, message)) {
+			char* receivedMessage = receiveMessage(clientSocket);
+			if (receivedMessage != nullptr) {
+				if (MessageConversion::isHandshakeCorrect(receivedMessage)) {
 					logDebug("Connection accepted");
 					response.setSuccess(true);
-					message = MessageConversion::convertResponseToJson(&response);
-					if (send(clientSocket, message, strlen(message) + 1, 0)
-							> 0) {
+					message = MessageConversion::convertResponseToJson(
+							&response);
+					if (sendMessage(clientSocket, message)) {
 						TcpConnection* connection = new TcpConnection(
 								clientSocket, this, spotifyRunner);
 						connection->start();
 						this->currentConnections.push_back(connection);
 						numCurrentConnections++;
 					}
-					delete message;
+					delete[] message;
 				} else {
 					response.setMessage("Handshake incorrect.");
-					message = MessageConversion::convertResponseToJson(&response);
-					send(clientSocket, message, strlen(message) + 1, 0);
-					delete message;
+					message = MessageConversion::convertResponseToJson(
+							&response);
+					sendMessage(clientSocket, message);
+					delete[] message;
 					connectionRefused = true;
 				}
+				delete[] receivedMessage;
 			} else {
 				response.setMessage("Error during receiving of message");
 				message = MessageConversion::convertResponseToJson(&response);
-				send(clientSocket, message, strlen(message) + 1, 0);
-				delete message;
+				sendMessage(clientSocket, message);
+				delete[] message;
 				connectionRefused = true;
 			}
 		} else {
 			response.setMessage("Too many connections");
 			message = MessageConversion::convertResponseToJson(&response);
-			send(clientSocket, message, strlen(message) + 1, 0);
-			delete message;
+			sendMessage(clientSocket, message);
+			delete[] message;
 			connectionRefused = true;
 		}
 
@@ -106,7 +134,7 @@ TcpServer::~TcpServer() {
 	this->cleanupClosedConnections();
 
 	std::vector<TcpConnection*>::iterator it = currentConnections.begin();
-	while(it != currentConnections.end()) {
+	while (it != currentConnections.end()) {
 		TcpConnection* connection = *it;
 		connection->stop();
 		delete connection;
@@ -116,7 +144,7 @@ TcpServer::~TcpServer() {
 
 void TcpServer::cleanupClosedConnections() {
 	std::vector<TcpConnection*>::iterator it = closedConnections.begin();
-	while(it != closedConnections.end()) {
+	while (it != closedConnections.end()) {
 		TcpConnection* connection = *it;
 		delete connection;
 		closedConnections.erase(it++);
@@ -124,8 +152,9 @@ void TcpServer::cleanupClosedConnections() {
 }
 
 void TcpServer::connectionClosed(TcpConnection* connection) {
-	std::vector<TcpConnection*>::iterator position = std::find(currentConnections.begin(), currentConnections.end(), connection);
-	if (position != currentConnections.end()){
+	std::vector<TcpConnection*>::iterator position = std::find(
+			currentConnections.begin(), currentConnections.end(), connection);
+	if (position != currentConnections.end()) {
 		currentConnections.erase(position);
 	}
 	closedConnections.push_back(connection);

@@ -32,35 +32,28 @@ TcpConnection::TcpConnection(int connectionSocket, TcpServer* server,
 }
 
 void TcpConnection::run() {
-	int existingSize = 0;
-	char* message, messageBuff[RECEIVE_BUFF_SIZE];
 
 	while (!shouldStop) {
-		int readSize = recv(connectionSocket, messageBuff, RECEIVE_BUFF_SIZE,
-				0);
-		if (readSize > 0) {
-
-			char* newMessage = new char[existingSize + readSize];
-			if (existingSize > 0) {
-				assert(message != nullptr);
-				memcpy(newMessage, message, existingSize);
-				delete message;
-				message = nullptr;
-			}
-			memcpy(newMessage + existingSize, messageBuff, readSize);
-
-			//Check whether the message has an end
-			if (messageBuff[readSize - 1] == '\0') {
-
-				//Handle the string message (convert to Task, and add it to the runner)
-				handleMessage(newMessage);
-
-				delete newMessage;
-				//Reset for next message
-				existingSize = 0;
+		int networkOrderMessageSize;
+		int readSize = recv(connectionSocket, &networkOrderMessageSize,
+				sizeof(int), 0);
+		int messageSize = ntohl(networkOrderMessageSize);
+		if (readSize == 4) {
+			if (messageSize > 0 && messageSize < 8192) { //We won't handle messages bigger than 8KB
+				char* message = new char[messageSize + 1];
+				message[messageSize] = '\0'; //Make it a cstring
+				readSize = recv(connectionSocket, message, messageSize, 0);
+				if (readSize == messageSize) {
+					handleMessage(message);
+				} else {
+					logError("Connection error. Closing connection...");
+					shouldStop = true;
+					delete[] message;
+				}
 			} else {
-				existingSize += readSize;
-				message = newMessage;
+				logError(
+						"Received illegal message: Message to big\nClosing connection...");
+				shouldStop = true;
 			}
 		} else if (readSize < 0) {
 			logError("Connection error. Closing connection...");
@@ -87,11 +80,17 @@ void TcpConnection::sendResponse(ClientResponse* response) {
 }
 void TcpConnection::sendResponse(char* response) {
 	if (connectionOpen) {
-		if (send(connectionSocket, response, strlen(response) + 1, 0) <= 0) {
+		int32 messageSize = strlen(response);
+		int32 networkOrderMessageSize = htonl(messageSize);
+		if (send(connectionSocket, &networkOrderMessageSize, sizeof(int32), 0) <= 0) {
 			logError("Could not send response!");
+		} else {
+			if (send(connectionSocket, response, messageSize, 0) <= 0) {
+				logError("Could not send response!");
+			}
 		}
 	}
-	delete response;
+	delete[] response;
 }
 
 void TcpConnection::handleMessage(const char* message) {
