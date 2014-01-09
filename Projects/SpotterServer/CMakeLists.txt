@@ -17,7 +17,8 @@ set(SOURCE
 	src/Responses/ClientResponse.cpp
 	src/Tasks/PlayerTask.cpp
 	src/Tasks/PlaylistTask.cpp
-	src/Tasks/Task.cpp)
+	src/Tasks/Task.cpp
+	src/PropertyParser/propertyutil.cpp)
 
 add_executable(SpotterServer ${SOURCE})
 target_link_libraries(SpotterServer ${LIBSPOTIFY_LIBRARIES})
