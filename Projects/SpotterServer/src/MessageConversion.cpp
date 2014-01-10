@@ -18,6 +18,7 @@
 
 #include "Responses/ClientResponse.hpp"
 #include "Responses/ListResponse.hpp"
+#include "Responses/PlayerResponse.hpp"
 #include "Responses/ResponseStructures.hpp"
 #include "Responses/StatusResponse.hpp"
 
@@ -45,7 +46,7 @@ bool isHandshakeCorrect(const char* response) {
 	return false;
 }
 
-char* convertStatusResponseToJson(StatusResponse* response) {
+char* convertStatusResponseToJson(StatusResponse* response, bool broadcast) {
 	Document d;
 	d.SetObject();
 
@@ -149,9 +150,11 @@ Task* convertJsonToTask(const char* json) {
 						task->setCommand(PlayerCommandSeek);
 						PlayerCommandInfo info;
 						info.seekPosition = 0;
-						if(typeSpecific.HasMember("SeekPosition") & typeSpecific["SeekPosition"].IsInt()) {
-							info.seekPosition = typeSpecific["SeekPosition"].GetInt();
-							if(info.seekPosition < 0) {
+						if (typeSpecific.HasMember("SeekPosition")
+								& typeSpecific["SeekPosition"].IsInt()) {
+							info.seekPosition =
+									typeSpecific["SeekPosition"].GetInt();
+							if (info.seekPosition < 0) {
 								info.seekPosition = 0;
 							}
 						}
@@ -180,7 +183,8 @@ Task* convertJsonToTask(const char* json) {
 	}
 }
 
-char* convertListPlaylistInfoToJson(ListResponse<PlaylistInfo*>* response) {
+char* convertListPlaylistInfoToJson(ListResponse<PlaylistInfo*>* response,
+		bool broadcast) {
 	Document d;
 	d.SetObject();
 	Value type("List");
@@ -192,7 +196,7 @@ char* convertListPlaylistInfoToJson(ListResponse<PlaylistInfo*>* response) {
 	typeSpecific.AddMember("ListType", listType, d.GetAllocator());
 	Value list;
 	list.SetArray();
-	for (int i = 0; i < response->getListSize(); i++) {
+	while (response->getListSize() > 0) {
 		Value playlistInfo;
 		playlistInfo.SetObject();
 
@@ -234,22 +238,79 @@ char* convertListPlaylistInfoToJson(ListResponse<PlaylistInfo*>* response) {
 	Writer<StringBuffer> writer(buffer);
 	d.Accept(writer);
 	const char* message = buffer.GetString();
-	char* newMessage = new char[buffer.Size()+1];
+	char* newMessage = new char[buffer.Size() + 1];
 	memcpy(newMessage, message, buffer.Size());
 	newMessage[buffer.Size()] = '\0';
 	return newMessage;
 }
 
-char* convertResponseToJson(ClientResponse* response) {
+char* convertPlayerResponseToJson(PlayerResponse* response, bool broadcast) {
+	Document d;
+	d.SetObject();
+	Value type("Player");
+	d.AddMember("Type", type, d.GetAllocator());
+	Value broadcastField(true);
+	d.AddMember("Broadcast", broadcastField, d.GetAllocator());
+	Value typeSpecific;
+	typeSpecific.SetObject();
+
+	Value playerResponseType("TrackInfo");
+	typeSpecific.AddMember("PlayerResponseType", playerResponseType,
+			d.GetAllocator());
+	Value tracks;
+	tracks.SetArray();
+	TrackInfo* trackInfo = response->getPlayerResponseInfo().trackInfo;
+	while (trackInfo != nullptr) {
+		Value track;
+		track.SetObject();
+
+		if (trackInfo->name != nullptr) {
+			Value name(trackInfo->name);
+			track.AddMember("Name", name, d.GetAllocator());
+		}
+
+		if (trackInfo->duration != nullptr) {
+			Value name(trackInfo->duration);
+			track.AddMember("Duration", name, d.GetAllocator());
+		}
+
+		if(trackInfo->numArtists > 0) {
+			Value artists;
+			artists.SetArray();
+			for(int i = 0; i < trackInfo->numArtists; i++) {
+				Value artist(trackInfo->artists[i]);
+				artists.PushBack(artist, d.GetAllocator());
+			}
+			track.AddMember("Artists", artists, d.GetAllocator());
+		}
+		tracks.PushBack(track, d.GetAllocator());
+		trackInfo = trackInfo->nextTrack;
+	}
+	typeSpecific.AddMember("Tracks", tracks, d.GetAllocator());
+
+	d.AddMember("TypeSpecific", typeSpecific, d.GetAllocator());
+
+	StringBuffer buffer;
+	Writer<StringBuffer> writer(buffer);
+	d.Accept(writer);
+	const char* message = buffer.GetString();
+	char* newMessage = new char[buffer.Size() + 1];
+	memcpy(newMessage, message, buffer.Size());
+	newMessage[buffer.Size()] = '\0';
+	return newMessage;
+}
+
+char* convertResponseToJson(ClientResponse* response, bool broadcast) {
 	switch (response->getResponseType()) {
 	case ClientResponse::List: {
-		//Make a static cast first, to an incorrect type, just to get the type out of it
+		//Make a static cast first, to an incorrect type, just to get the type out of it #UGLYHACK
 		ListResponse<char>* listResponse =
 				static_cast<ListResponse<char>*>(response);
 		switch (listResponse->getListType()) {
 		case ListTypePlaylist:
 			return convertListPlaylistInfoToJson(
-					dynamic_cast<ListResponse<PlaylistInfo*>*>(response));
+					dynamic_cast<ListResponse<PlaylistInfo*>*>(response),
+					broadcast);
 			break;
 		default:
 			logError("Unknown listtype");
@@ -258,9 +319,13 @@ char* convertResponseToJson(ClientResponse* response) {
 		break;
 	}
 		break;
+	case ClientResponse::Player:
+		return convertPlayerResponseToJson(
+				dynamic_cast<PlayerResponse*>(response), broadcast);
+		break;
 	case ClientResponse::Status:
 		return convertStatusResponseToJson(
-				dynamic_cast<StatusResponse*>(response));
+				dynamic_cast<StatusResponse*>(response), broadcast);
 	default:
 		logError("Unknown ClientResponse type");
 	}

@@ -17,6 +17,7 @@ public:
 		Unknown,
 		Status,
 		List,
+		Player,
 	};
 
 	ClientResponse();

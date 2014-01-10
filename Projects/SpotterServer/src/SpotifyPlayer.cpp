@@ -10,13 +10,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "SpotifySession.hpp"
 #include "Tasks/PlayerTask.hpp"
 #include "Responses/StatusResponse.hpp"
+#include "Responses/PlayerResponse.hpp"
 
 namespace fambogie {
 
-SpotifyPlayer::SpotifyPlayer(sp_session* session) {
+SpotifyPlayer::SpotifyPlayer(sp_session* session,
+		SpotifySession* spotifySession) {
 	this->session = session;
+	this->spotifySession = spotifySession;
 	this->currentTrack = nullptr;
 	this->currentTrackEnded = false;
 	audio_init(&audioFifo);
@@ -28,14 +32,31 @@ SpotifyPlayer::~SpotifyPlayer() {
 
 void SpotifyPlayer::playTrack(sp_track* track) {
 	currentTrack = track;
-	currentTrackEnded = false;
 	audio_fifo_flush(&audioFifo);
 	sp_session_player_load(session, currentTrack);
-	sp_session_player_play(session, true);
-	if (playQueue.size() > 0) {
-		sp_session_player_prefetch(session, playQueue.front());
+	if (sp_track_get_availability(session, track)
+			== SP_TRACK_AVAILABILITY_AVAILABLE
+			&& !sp_track_is_local(session, track)) {
+		currentTrackEnded = false;
+
+		sp_session_player_play(session, true);
+
+		PlayerResponse* response = new PlayerResponse(
+				PlayerResponse::PlayerResponseTypeTrackInfo);
+		PlayerResponse::PlayerResponseInfo responseInfo;
+		responseInfo.trackInfo = getTrackInfo(track);
+
+		if (playQueue.size() > 0) {
+			sp_session_player_prefetch(session, playQueue.front());
+			responseInfo.trackInfo->nextTrack = getTrackInfo(playQueue.front());
+		}
+		response->setPlayerResponseInfo(responseInfo);
+
+		logDebug("Now playing: %s", responseInfo.trackInfo->name);
+		spotifySession->broadcastMessage(response);
+	} else {
+		currentTrackEnded = true;
 	}
-	logDebug("Now playing: %s", sp_track_name(track));
 }
 
 int SpotifyPlayer::onMusicDelivery(const sp_audioformat* format,
@@ -87,6 +108,7 @@ void SpotifyPlayer::tick() {
 			audio_fifo_flush(&audioFifo);
 			currentTrack = nullptr;
 			logDebug("No next track!");
+			currentTrackEnded = false;
 		}
 	}
 }
@@ -127,7 +149,8 @@ ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
 		break;
 	case PlayerCommandSeek:
 		if (currentTrack != nullptr && !currentTrackEnded) {
-			sp_session_player_seek(session, task->getCommandInfo().seekPosition);
+			sp_session_player_seek(session,
+					task->getCommandInfo().seekPosition);
 			response->setMessage(nullptr);
 			response->setSuccess(true);
 		} else {
@@ -136,6 +159,23 @@ ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
 		break;
 	}
 	return response;
+}
+
+TrackInfo* SpotifyPlayer::getTrackInfo(sp_track* track) {
+	if (track != nullptr) {
+		TrackInfo* trackInfo = new TrackInfo();
+		trackInfo->name = sp_track_name(track);
+		trackInfo->numArtists = sp_track_num_artists(track);
+		trackInfo->artists = new const char*[trackInfo->numArtists];
+		for (int i = 0; i < trackInfo->numArtists; i++) {
+			trackInfo->artists[i] = sp_artist_name(sp_track_artist(track, i));
+		}
+		trackInfo->duration = sp_track_duration(track);
+		trackInfo->nextTrack = nullptr;
+		return trackInfo;
+	}
+
+	return nullptr;
 }
 
 } /* namespace fambogie */

@@ -101,7 +101,7 @@ void SpotifySession::login(const char* username, const char* password,
 
 	if(loggedIn) {
 		logDebug("Logged in");
-		spotifyPlayer = new SpotifyPlayer(session);
+		spotifyPlayer = new SpotifyPlayer(session, this);
 		spotifyPlaylistContainer = new SpotifyPlaylistContainer(session, this);
 	}
 }
@@ -217,6 +217,12 @@ void SpotifySession::onEndOfTrackDispatch(sp_session* session) {
 		iterator->second->onEndOfTrack();
 	} else {
 		logError("Could not find session: %p", (void*) session);
+	}
+}
+
+void SpotifySession::broadcastMessage(ClientResponse* response) {
+	if(runner != nullptr) {
+		runner->broadcastMessage(response);
 	}
 }
 

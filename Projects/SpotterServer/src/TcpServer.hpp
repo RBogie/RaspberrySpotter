@@ -29,6 +29,8 @@ public:
 
 	void cleanupClosedConnections();
 	void connectionClosed(TcpConnection* connection);
+	void broadcastMessage(ClientResponse* message);
+	void broadcastMessage(char* json);
 
 private:
 	SpotifyRunner* spotifyRunner;

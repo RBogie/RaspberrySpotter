@@ -20,6 +20,7 @@ class SpotifyRunner;
 #include "SpotifySession.hpp"
 #include "Mutex.hpp"
 #include "CondVar.hpp"
+#include "TcpServer.hpp"
 
 namespace fambogie {
 
@@ -32,6 +33,8 @@ public:
 	void notify();
 	void addTask(Task* task);
 	void processTasks();
+	void setTcpServer(TcpServer* server);
+	void broadcastMessage(ClientResponse* response);
 private:
 	Mutex mainLoopConditionMutex;
 	CondVar mainLoopCondition;
@@ -41,7 +44,7 @@ private:
 	std::list<Task*> taskList;
 
 	SpotifySession* spotifySession;
-
+	TcpServer* tcpServer;
 };
 
 } /* namespace fambogie */

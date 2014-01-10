@@ -15,12 +15,15 @@
 
 #include "Tasks/PlayerTask.hpp"
 #include "Responses/ClientResponse.hpp"
+#include "Responses/PlayerResponse.hpp"
 
 namespace fambogie {
 
+class SpotifySession;
+
 class SpotifyPlayer {
 public:
-	SpotifyPlayer(sp_session* session);
+	SpotifyPlayer(sp_session* session, SpotifySession* spotifySession);
 	virtual ~SpotifyPlayer();
 
 	void playTrack(sp_track* track);
@@ -37,12 +40,15 @@ public:
 
 private:
 	sp_session* session;
+	SpotifySession* spotifySession;
 	audio_fifo_t audioFifo;
 
 	bool currentTrackEnded;
 
 	sp_track* currentTrack;
 	std::list<sp_track*> playQueue;
+
+	TrackInfo* getTrackInfo(sp_track* track);
 };
 
 } /* namespace fambogie */

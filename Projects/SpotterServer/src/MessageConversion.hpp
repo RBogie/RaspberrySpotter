@@ -21,7 +21,7 @@ bool isHandshakeCorrect(const char* response);
 
 Task* convertJsonToTask(const char* json);
 
-char* convertResponseToJson(ClientResponse* response);
+char* convertResponseToJson(ClientResponse* response, bool broadcast = false);
 
 }
 

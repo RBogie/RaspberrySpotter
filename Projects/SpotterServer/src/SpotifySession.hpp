@@ -65,6 +65,8 @@ public:
 
 	SpotifyPlayer* getSpotifyPlayer();
 
+	void broadcastMessage(ClientResponse* response);
+
 	/**
 	 * Destructor
 	 */

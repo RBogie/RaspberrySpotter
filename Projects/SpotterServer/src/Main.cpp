@@ -19,8 +19,8 @@ int main(int argc, const char* argv[]) {
 	config.user_agent = "RaspberrySpotter";
 
 	fambogie::SpotifyRunner runner(config);
-	runner.start();
-
 	fambogie::TcpServer server(6666, 8, &runner);
+	runner.setTcpServer(&server);
+	runner.start();
 	server.listen();
 }

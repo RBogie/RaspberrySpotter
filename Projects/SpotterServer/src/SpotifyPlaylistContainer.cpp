@@ -26,7 +26,8 @@ static void playlist_moved(sp_playlistcontainer *pc, sp_playlist *playlist,
 static void container_loaded(sp_playlistcontainer *pc, void *userdata) {
 }
 
-SpotifyPlaylistContainer::SpotifyPlaylistContainer(sp_session* session, SpotifySession* spotifySession) {
+SpotifyPlaylistContainer::SpotifyPlaylistContainer(sp_session* session,
+		SpotifySession* spotifySession) {
 	this->session = session;
 	this->spotifySession = spotifySession;
 	playlistContainer = sp_session_playlistcontainer(session);
@@ -54,17 +55,22 @@ ClientResponse* SpotifyPlaylistContainer::processTask(PlaylistTask* task) {
 }
 
 ClientResponse* SpotifyPlaylistContainer::playPlaylist(PlaylistTask* task) {
-	StatusResponse* response = new StatusResponse(false, "Playlist Id is out of range!");
+	StatusResponse* response = new StatusResponse(false,
+			"Playlist Id is out of range!");
 
 	int playlistNum = task->getCommandInfo().playlist;
-	if(playlistNum >= 0 && playlistNum < sp_playlistcontainer_num_playlists(playlistContainer)) {
-		sp_playlist* playlist = sp_playlistcontainer_playlist(playlistContainer, playlistNum);
-		if(sp_playlist_num_tracks(playlist) > 0) {
+	if (playlistNum >= 0
+			&& playlistNum
+					< sp_playlistcontainer_num_playlists(playlistContainer)) {
+		sp_playlist* playlist = sp_playlistcontainer_playlist(playlistContainer,
+				playlistNum);
+		if (sp_playlist_num_tracks(playlist) > 0) {
 			sp_track* track = sp_playlist_track(playlist, 0);
 			spotifySession->getSpotifyPlayer()->clearPlayQueue();
 			spotifySession->getSpotifyPlayer()->playTrack(track);
-			for(int i = 1; i < sp_playlist_num_tracks(playlist); i++) {
-				spotifySession->getSpotifyPlayer()->addTrackToQueue(sp_playlist_track(playlist, i));
+			for (int i = 1; i < sp_playlist_num_tracks(playlist); i++) {
+				spotifySession->getSpotifyPlayer()->addTrackToQueue(
+						sp_playlist_track(playlist, i));
 			}
 			response->setSuccess(true);
 			response->setMessage(nullptr);
@@ -81,25 +87,31 @@ ListResponse<PlaylistInfo*>* SpotifyPlaylistContainer::listPlaylists(
 	ListResponse<PlaylistInfo*>* response = new ListResponse<PlaylistInfo*>();
 	response->setListType(ListTypePlaylist);
 	CommandInfo info = task->getCommandInfo();
-	bool sendName			= ((info.ListFlags & Name) == Name);
-	bool sendNumTracks		= ((info.ListFlags & NumTracks) == NumTracks);
-	bool sendDescription	= ((info.ListFlags & Description) == Description);
+	bool sendName = ((info.ListFlags & Name) == Name);
+	bool sendNumTracks = ((info.ListFlags & NumTracks) == NumTracks);
+	bool sendDescription = ((info.ListFlags & Description) == Description);
 
 	int numPlaylists = sp_playlistcontainer_num_playlists(playlistContainer);
 	for (int i = 0; i < numPlaylists; i++) {
-		PlaylistInfo* playlistInfo = new PlaylistInfo();
-		playlistInfo->id = i;
-		sp_playlist* playlist = sp_playlistcontainer_playlist(playlistContainer, i);
-		if(sendName) {
-			playlistInfo->name = sp_playlist_name(playlist);
+		if (sp_playlistcontainer_playlist_type(playlistContainer, i)
+				== SP_PLAYLIST_TYPE_PLAYLIST) {
+			PlaylistInfo* playlistInfo = new PlaylistInfo();
+			playlistInfo->id = i;
+			sp_playlist* playlist = sp_playlistcontainer_playlist(
+					playlistContainer, i);
+
+			if (sendName) {
+				playlistInfo->name = sp_playlist_name(playlist);
+			}
+			if (sendNumTracks) {
+				playlistInfo->numTracks = sp_playlist_num_tracks(playlist);
+			}
+			if (sendDescription) {
+				playlistInfo->description = sp_playlist_get_description(
+						playlist);
+			}
+			response->addMember(playlistInfo);
 		}
-		if(sendNumTracks) {
-			playlistInfo->numTracks = sp_playlist_num_tracks(playlist);
-		}
-		if(sendDescription) {
-			playlistInfo->description = sp_playlist_get_description(playlist);
-		}
-		response->addMember(playlistInfo);
 	}
 	return response;
 }

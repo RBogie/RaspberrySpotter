@@ -161,4 +161,20 @@ void TcpServer::connectionClosed(TcpConnection* connection) {
 	numCurrentConnections--;
 }
 
+void TcpServer::broadcastMessage(ClientResponse* message) {
+	char* json = MessageConversion::convertResponseToJson(message, true);
+	if(json != nullptr) {
+		broadcastMessage(json);
+	}
+	delete[] json;
+}
+
+void TcpServer::broadcastMessage(char* json) {
+	std::vector<TcpConnection*>::iterator position = currentConnections.begin();
+	while(position != currentConnections.end()) {
+		(*position)->sendResponse(json, false);
+		position++;
+	}
+}
+
 } /* namespace fambogie */

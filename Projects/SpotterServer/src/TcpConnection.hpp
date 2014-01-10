@@ -32,7 +32,7 @@ public:
 	void stop();
 
 	void sendResponse(ClientResponse* response);
-	void sendResponse(char* response);
+	void sendResponse(char* response, bool cleanup = true);
 	void handleMessage(const char* message);
 private:
 	int connectionSocket;

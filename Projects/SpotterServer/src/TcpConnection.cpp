@@ -74,15 +74,17 @@ void TcpConnection::run() {
 void TcpConnection::sendResponse(ClientResponse* response) {
 	if (connectionOpen) {
 		char* jsonResponse = MessageConversion::convertResponseToJson(response);
+		logDebug("Message send: %s", jsonResponse);
 		sendResponse(jsonResponse);
 	}
 	delete response;
 }
-void TcpConnection::sendResponse(char* response) {
+void TcpConnection::sendResponse(char* response, bool cleanup) {
 	if (connectionOpen) {
 		int32 messageSize = strlen(response);
 		int32 networkOrderMessageSize = htonl(messageSize);
-		if (send(connectionSocket, &networkOrderMessageSize, sizeof(int32), 0) <= 0) {
+		if (send(connectionSocket, &networkOrderMessageSize, sizeof(int32), 0)
+				<= 0) {
 			logError("Could not send response!");
 		} else {
 			if (send(connectionSocket, response, messageSize, 0) <= 0) {
@@ -90,7 +92,9 @@ void TcpConnection::sendResponse(char* response) {
 			}
 		}
 	}
-	delete[] response;
+	if (cleanup) {
+		delete[] response;
+	}
 }
 
 void TcpConnection::handleMessage(const char* message) {

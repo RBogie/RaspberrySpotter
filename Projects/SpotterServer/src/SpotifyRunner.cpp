@@ -99,6 +99,16 @@ void SpotifyRunner::processTasks() {
 	}
 }
 
+void SpotifyRunner::setTcpServer(TcpServer* server) {
+	this->tcpServer = server;
+}
+
+void SpotifyRunner::broadcastMessage(ClientResponse* response) {
+	if(tcpServer != nullptr) {
+		tcpServer->broadcastMessage(response);
+	}
+}
+
 void SpotifyRunner::notify() {
 	if (mainLoopCondition.signal() != 0) {
 		logError("pthread_cond_signal");
