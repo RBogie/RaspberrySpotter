@@ -18,7 +18,8 @@ set(SOURCE
 	src/Tasks/PlayerTask.cpp
 	src/Tasks/PlaylistTask.cpp
 	src/Tasks/Task.cpp
-	src/PropertyParser/propertyutil.cpp)
+	src/PropertyParser/propertyutil.cpp
+	src/Base64Encoder/modp_b64.cpp)
 
 add_executable(SpotterServer ${SOURCE})
 target_link_libraries(SpotterServer ${LIBSPOTIFY_LIBRARIES})

@@ -9,6 +9,7 @@
 #define PLAYERRESPONSE_HPP_
 
 #include "../GlobalDefines.hpp"
+#include <libspotify/api.h>
 
 namespace fambogie {
 
@@ -17,6 +18,8 @@ struct TrackInfo {
 	const char** artists;
 	int numArtists;
 	int duration;
+	const char* albumName;
+	sp_image* albumArt;
 	TrackInfo* nextTrack;
 };
 
@@ -49,6 +52,9 @@ public:
 				while (trackToDelete != nullptr) {
 					TrackInfo* currentTrack = trackToDelete;
 					trackToDelete = currentTrack->nextTrack;
+					if (currentTrack->albumArt != nullptr) {
+						sp_image_release(currentTrack->albumArt);
+					}
 					delete[] currentTrack->artists;
 					delete currentTrack;
 				}

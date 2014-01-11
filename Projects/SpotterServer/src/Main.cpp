@@ -6,6 +6,9 @@
 #include "TcpServer.hpp"
 #include <unistd.h>
 
+#include "Base64Encoder/modp_b64.h"
+#include <iostream>
+
 int main(int argc, const char* argv[]) {
 
 	sp_session_config config;

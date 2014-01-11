@@ -22,6 +22,7 @@
 #include "Responses/ResponseStructures.hpp"
 #include "Responses/StatusResponse.hpp"
 
+#include "Base64Encoder/modp_b64.h"
 using namespace rapidjson;
 
 namespace fambogie {
@@ -274,15 +275,44 @@ char* convertPlayerResponseToJson(PlayerResponse* response, bool broadcast) {
 			track.AddMember("Duration", name, d.GetAllocator());
 		}
 
-		if(trackInfo->numArtists > 0) {
+		if (trackInfo->numArtists > 0) {
 			Value artists;
 			artists.SetArray();
-			for(int i = 0; i < trackInfo->numArtists; i++) {
+			for (int i = 0; i < trackInfo->numArtists; i++) {
 				Value artist(trackInfo->artists[i]);
 				artists.PushBack(artist, d.GetAllocator());
 			}
 			track.AddMember("Artists", artists, d.GetAllocator());
 		}
+
+		if (trackInfo->albumName != nullptr) {
+			Value albumName(trackInfo->albumName);
+			track.AddMember("AlbumName", albumName, d.GetAllocator());
+		}
+
+		if (trackInfo->albumArt != nullptr) {
+			if (sp_image_is_loaded(trackInfo->albumArt)) {
+				size_t size;
+				const char* data = static_cast<const char*>(sp_image_data(
+						trackInfo->albumArt, &size));
+
+				if (data != nullptr && size > 0) {
+					char* b64Data = new char[modp_b64_encode_len(size)];
+					int encodedSize = modp_b64_encode(b64Data, data, size);
+					logDebug("Encoded image, size=%d, original=%d", encodedSize,
+							size);
+					if (encodedSize > 0) {
+						Value albumArt;
+						albumArt.SetString(b64Data, d.GetAllocator());
+						track.AddMember("AlbumArt", albumArt, d.GetAllocator());
+					}
+					delete[] b64Data;
+				}
+			} else {
+				//sp_image_add_load_callback(trackInfo->albumArt, );
+			}
+		}
+
 		tracks.PushBack(track, d.GetAllocator());
 		trackInfo = trackInfo->nextTrack;
 	}

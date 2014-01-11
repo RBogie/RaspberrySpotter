@@ -171,6 +171,13 @@ TrackInfo* SpotifyPlayer::getTrackInfo(sp_track* track) {
 			trackInfo->artists[i] = sp_artist_name(sp_track_artist(track, i));
 		}
 		trackInfo->duration = sp_track_duration(track);
+
+		sp_album* album = sp_track_album(track);
+		if(album != nullptr) {
+			trackInfo->albumName = sp_album_name(album);
+			trackInfo->albumArt = sp_image_create(session, sp_album_cover(album, SP_IMAGE_SIZE_NORMAL));
+		}
+
 		trackInfo->nextTrack = nullptr;
 		return trackInfo;
 	}
