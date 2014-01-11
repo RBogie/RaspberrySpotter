@@ -44,6 +44,8 @@ char* receiveMessage(int socket) {
 	return nullptr;
 }
 
+TcpServer* TcpServer::serverInstance;
+
 TcpServer::TcpServer(uint16 port, int maxConnections,
 		SpotifyRunner* spotifyRunner) {
 	this->spotifyRunner = spotifyRunner;
@@ -69,9 +71,9 @@ void TcpServer::listen() {
 		logError("Could not bind socket");
 		return;
 	}
-
 	::listen(serverSocket, 1);
 	logDebug("Waiting for incoming connections...");
+	serverInstance = this;
 	int clientSocket;
 	struct sockaddr_in client;
 	int c = sizeof(client);
@@ -163,18 +165,22 @@ void TcpServer::connectionClosed(TcpConnection* connection) {
 
 void TcpServer::broadcastMessage(ClientResponse* message) {
 	char* json = MessageConversion::convertResponseToJson(message, true);
-	if(json != nullptr) {
+	if (json != nullptr) {
 		broadcastMessage(json);
 	}
 	delete[] json;
 }
 
-void TcpServer::broadcastMessage(char* json) {
+void TcpServer::broadcastMessage(const char* json) {
 	std::vector<TcpConnection*>::iterator position = currentConnections.begin();
-	while(position != currentConnections.end()) {
-		(*position)->sendResponse(json, false);
+	while (position != currentConnections.end()) {
+		(*position)->sendResponse((char*) json, false); //Safe to cast that way, since when given false, sendResponse won't modify the value
 		position++;
 	}
+}
+
+TcpServer* TcpServer::getServerInstance() {
+	return serverInstance;
 }
 
 } /* namespace fambogie */

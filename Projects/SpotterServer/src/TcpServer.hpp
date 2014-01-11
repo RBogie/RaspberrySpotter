@@ -30,8 +30,9 @@ public:
 	void cleanupClosedConnections();
 	void connectionClosed(TcpConnection* connection);
 	void broadcastMessage(ClientResponse* message);
-	void broadcastMessage(char* json);
+	void broadcastMessage(const char* json);
 
+	static TcpServer* getServerInstance();
 private:
 	SpotifyRunner* spotifyRunner;
 
@@ -43,6 +44,8 @@ private:
 
 	std::vector<TcpConnection*> currentConnections;
 	std::vector<TcpConnection*> closedConnections; //Can be deleted after some time
+
+	static TcpServer* serverInstance;
 };
 
 } /* namespace fambogie */

@@ -12,6 +12,8 @@
 #include "rapidjson/writer.h"
 
 #include "MessageConversion.hpp"
+#include "TcpServer.hpp"
+
 #include "Tasks/Task.hpp"
 #include "Tasks/PlayerTask.hpp"
 #include "Tasks/PlaylistTask.h"
@@ -24,6 +26,51 @@
 
 #include "Base64Encoder/modp_b64.h"
 using namespace rapidjson;
+
+static int imageRequestIdCount = 0;
+
+static void imageLoadedCallback(sp_image* image, void* userData) {
+	int imageRequestId = *((int*) userData);
+	delete (int*) userData;
+
+	Document d;
+	d.SetObject();
+
+	Value type("ImageLoaded");
+	d.AddMember("Type", type, d.GetAllocator());
+
+	Value typeSpecific;
+	typeSpecific.SetObject();
+
+	Value imageId(imageRequestId);
+	typeSpecific.AddMember("ImageId", imageId, d.GetAllocator());
+
+	size_t size;
+	const char* data = (const char*)sp_image_data(image, &size);
+	char* b64Data = new char[modp_b64_encode_len(size)];
+
+	int encodedSize = modp_b64_encode(b64Data, data, size);
+	if (encodedSize > 0) {
+		Value albumArt;
+		albumArt.SetString(b64Data, d.GetAllocator());
+		typeSpecific.AddMember("ImageData", albumArt, d.GetAllocator());
+	}
+	delete[] b64Data;
+
+	d.AddMember("TypeSpecific", typeSpecific, d.GetAllocator());
+
+	Value broadcast(true);
+	d.AddMember("Broadcast", broadcast, d.GetAllocator());
+
+	StringBuffer buffer;
+	Writer<StringBuffer> writer(buffer);
+	d.Accept(writer);
+	const char* message = buffer.GetString();
+
+	fambogie::TcpServer::getServerInstance()->broadcastMessage(message);
+
+	return;
+}
 
 namespace fambogie {
 namespace MessageConversion {
@@ -299,8 +346,6 @@ char* convertPlayerResponseToJson(PlayerResponse* response, bool broadcast) {
 				if (data != nullptr && size > 0) {
 					char* b64Data = new char[modp_b64_encode_len(size)];
 					int encodedSize = modp_b64_encode(b64Data, data, size);
-					logDebug("Encoded image, size=%d, original=%d", encodedSize,
-							size);
 					if (encodedSize > 0) {
 						Value albumArt;
 						albumArt.SetString(b64Data, d.GetAllocator());
@@ -309,7 +354,13 @@ char* convertPlayerResponseToJson(PlayerResponse* response, bool broadcast) {
 					delete[] b64Data;
 				}
 			} else {
-				//sp_image_add_load_callback(trackInfo->albumArt, );
+				int* imageRequestId = new int;
+				*imageRequestId = imageRequestIdCount++;
+				Value albumArtImageId(*imageRequestId);
+				track.AddMember("AlbumArtImageId", albumArtImageId,
+						d.GetAllocator());
+				sp_image_add_load_callback(trackInfo->albumArt,
+						&imageLoadedCallback, (void*) imageRequestId);
 			}
 		}
 
