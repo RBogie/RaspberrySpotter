@@ -51,6 +51,7 @@ void SpotifyPlayer::playTrack(sp_track* track) {
 			responseInfo.trackInfo->nextTrack = getTrackInfo(playQueue.front());
 		}
 		response->setPlayerResponseInfo(responseInfo);
+		response->setCurrentlyPlaying(true);
 
 		logDebug("Now playing: %s", responseInfo.trackInfo->name);
 		spotifySession->broadcastMessage(response);
@@ -107,8 +108,13 @@ void SpotifyPlayer::tick() {
 			sp_session_player_unload(session);
 			audio_fifo_flush(&audioFifo);
 			currentTrack = nullptr;
-			logDebug("No next track!");
 			currentTrackEnded = false;
+			logDebug("No next track!");
+
+			PlayerResponse* response = new PlayerResponse(
+					PlayerResponse::PlayerResponseTypeTrackInfo);
+			response->setCurrentlyPlaying(false);
+			spotifySession->broadcastMessage(response);
 		}
 	}
 }
@@ -134,7 +140,7 @@ ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
 	StatusResponse* response = new StatusResponse(false, "Unknown command");
 	switch (task->getCommand()) {
 	case PlayerCommandPlay:
-		if (currentTrack != nullptr && !currentTrackEnded) {
+		if (currentTrack != nullptr && !currentTrackEnded && paused) {
 			sp_session_player_play(session, true);
 			response->setMessage(nullptr);
 			response->setSuccess(true);
@@ -143,7 +149,9 @@ ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
 		}
 		break;
 	case PlayerCommandPause:
-		sp_session_player_play(session, false);
+		if (!paused) {
+			sp_session_player_play(session, false);
+		}
 		response->setMessage(nullptr);
 		response->setSuccess(true);
 		break;
@@ -157,6 +165,23 @@ ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
 			response->setMessage("No track currently playing");
 		}
 		break;
+	case PlayerCommandCurrentPlayingInfo:
+		delete response;
+		PlayerResponse* playerResponse = new PlayerResponse(
+				PlayerResponse::PlayerResponseTypeTrackInfo);
+		if (currentTrack != nullptr && !currentTrackEnded) {
+			PlayerResponse::PlayerResponseInfo responseInfo;
+			responseInfo.trackInfo = getTrackInfo(currentTrack);
+			if (playQueue.size() > 0) {
+				responseInfo.trackInfo->nextTrack = getTrackInfo(
+						playQueue.front());
+			}
+			playerResponse->setPlayerResponseInfo(responseInfo);
+			playerResponse->setCurrentlyPlaying(!paused);
+		} else {
+			playerResponse->setCurrentlyPlaying(false);
+		}
+		return playerResponse;
 	}
 	return response;
 }
@@ -173,9 +198,10 @@ TrackInfo* SpotifyPlayer::getTrackInfo(sp_track* track) {
 		trackInfo->duration = sp_track_duration(track);
 
 		sp_album* album = sp_track_album(track);
-		if(album != nullptr) {
+		if (album != nullptr) {
 			trackInfo->albumName = sp_album_name(album);
-			trackInfo->albumArt = sp_image_create(session, sp_album_cover(album, SP_IMAGE_SIZE_NORMAL));
+			trackInfo->albumArt = sp_image_create(session,
+					sp_album_cover(album, SP_IMAGE_SIZE_NORMAL));
 		}
 
 		trackInfo->nextTrack = nullptr;

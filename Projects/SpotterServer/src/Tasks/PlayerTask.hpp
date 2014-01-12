@@ -18,6 +18,8 @@ enum PlayerCommand {
 	PlayerCommandPlay,
 	PlayerCommandPause,
 	PlayerCommandSeek,
+	PlayerCommandCurrentPlayingInfo,
+
 };
 
 union PlayerCommandInfo {

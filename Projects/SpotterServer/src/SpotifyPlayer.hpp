@@ -44,6 +44,7 @@ private:
 	audio_fifo_t audioFifo;
 
 	bool currentTrackEnded;
+	bool paused;
 
 	sp_track* currentTrack;
 	std::list<sp_track*> playQueue;

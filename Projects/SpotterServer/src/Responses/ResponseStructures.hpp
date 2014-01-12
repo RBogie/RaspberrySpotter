@@ -9,6 +9,7 @@
 #define RESPONSESTRUCTURES_HPP_
 
 #include "../GlobalDefines.hpp"
+#include <libspotify/api.h>
 
 typedef struct PlaylistInfo {
 	int id = -1;
@@ -16,8 +17,7 @@ typedef struct PlaylistInfo {
 	int numTracks = -1;
 	const char* description;
 
-	const char* image;
-	int imageSize;
+	sp_image* image;
 };
 
 

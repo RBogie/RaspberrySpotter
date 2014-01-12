@@ -37,6 +37,7 @@ public:
 	PlayerResponse(PlayerResponseType type) :
 			ClientResponse(Player) {
 		this->playerResponseType = type;
+		this->currentlyPlaying = false;
 		switch (type) {
 		case PlayerResponseTypeTrackInfo:
 			info.trackInfo = nullptr;
@@ -74,9 +75,17 @@ public:
 		this->info = info;
 	}
 
+	bool isCurrentlyPlaying() {
+		return currentlyPlaying;
+	}
+	void setCurrentlyPlaying(bool currentlyPlaying) {
+		this->currentlyPlaying = currentlyPlaying;
+	}
+
 private:
 	PlayerResponseType playerResponseType;
 	PlayerResponseInfo info;
+	bool currentlyPlaying;
 };
 
 } /* namespace fambogie */

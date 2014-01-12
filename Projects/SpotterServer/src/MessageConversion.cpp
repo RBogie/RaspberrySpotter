@@ -46,7 +46,7 @@ static void imageLoadedCallback(sp_image* image, void* userData) {
 	typeSpecific.AddMember("ImageId", imageId, d.GetAllocator());
 
 	size_t size;
-	const char* data = (const char*)sp_image_data(image, &size);
+	const char* data = (const char*) sp_image_data(image, &size);
 	char* b64Data = new char[modp_b64_encode_len(size)];
 
 	int encodedSize = modp_b64_encode(b64Data, data, size);
@@ -78,7 +78,7 @@ namespace MessageConversion {
 const char* getHandshakeInitiation() {
 	return "{"
 			"\"ServerName\": \"SpotterServer\","
-			"\"ProtocolVersion\": 1"
+			"\"ProtocolVersion\": 2"
 			"}";
 }
 
@@ -88,7 +88,7 @@ bool isHandshakeCorrect(const char* response) {
 	if (d.IsObject()) {
 		if (d.HasMember("ClientName") && d.HasMember("ProtocolVersion")) {
 			const Value& protocolVersion = d["ProtocolVersion"];
-			return (protocolVersion.IsInt() && protocolVersion.GetInt() == 1);
+			return (protocolVersion.IsInt() && protocolVersion.GetInt() == 2);
 		}
 	}
 	return false;
@@ -207,6 +207,8 @@ Task* convertJsonToTask(const char* json) {
 							}
 						}
 						task->setCommandInfo(info);
+					} else if (strcasecmp(command, "CurrentPlayingInfo") == 0) {
+						task->setCommand(PlayerCommandCurrentPlayingInfo);
 					} else {
 						logError(
 								"convertJsonToTask: Unknown (player) command!");
@@ -297,7 +299,7 @@ char* convertPlayerResponseToJson(PlayerResponse* response, bool broadcast) {
 	d.SetObject();
 	Value type("Player");
 	d.AddMember("Type", type, d.GetAllocator());
-	Value broadcastField(true);
+	Value broadcastField(broadcast);
 	d.AddMember("Broadcast", broadcastField, d.GetAllocator());
 	Value typeSpecific;
 	typeSpecific.SetObject();
@@ -305,6 +307,10 @@ char* convertPlayerResponseToJson(PlayerResponse* response, bool broadcast) {
 	Value playerResponseType("TrackInfo");
 	typeSpecific.AddMember("PlayerResponseType", playerResponseType,
 			d.GetAllocator());
+
+	Value trackplaying(response->isCurrentlyPlaying());
+	typeSpecific.AddMember("TrackPlaying", trackplaying, d.GetAllocator());
+
 	Value tracks;
 	tracks.SetArray();
 	TrackInfo* trackInfo = response->getPlayerResponseInfo().trackInfo;
