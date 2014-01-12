@@ -20,6 +20,7 @@ enum Command {
 	CommandUnknown,
 	CommandList,
 	CommandPlayPlaylist,
+	CommandListTracks,
 };
 
 enum ListFlags {
@@ -29,9 +30,23 @@ enum ListFlags {
 	Image = 8,
 };
 
+enum TrackInfoFlags {
+	TrackInfoName = 1,
+	TrackInfoDuration = 2,
+	TrackInfoAlbum = 4,
+	TrackInfoArtist = 8,
+	TrackInfoArtwork = 16,
+};
+
+typedef struct ListPlaylistTrackInfo {
+	char trackInfoFlags;
+	int playlist;
+};
+
 union CommandInfo {
 	char ListFlags;
 	int playlist;
+	ListPlaylistTrackInfo listPlaylistTrackInfo;
 };
 
 class PlaylistTask: public Task {

@@ -49,7 +49,7 @@ private:
 	sp_track* currentTrack;
 	std::list<sp_track*> playQueue;
 
-	TrackInfo* getTrackInfo(sp_track* track);
+	PlayerTrackInfo* getTrackInfo(sp_track* track);
 };
 
 } /* namespace fambogie */

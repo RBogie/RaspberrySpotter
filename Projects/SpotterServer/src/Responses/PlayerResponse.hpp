@@ -13,21 +13,21 @@
 
 namespace fambogie {
 
-struct TrackInfo {
+struct PlayerTrackInfo {
 	const char* name;
 	const char** artists;
 	int numArtists;
 	int duration;
 	const char* albumName;
 	sp_image* albumArt;
-	TrackInfo* nextTrack;
+	PlayerTrackInfo* nextTrack;
 };
 
 class PlayerResponse: public ClientResponse {
 public:
 
 	union PlayerResponseInfo {
-		TrackInfo* trackInfo;
+		PlayerTrackInfo* trackInfo;
 	};
 
 	enum PlayerResponseType {
@@ -49,9 +49,9 @@ public:
 		switch (playerResponseType) {
 		case PlayerResponseTypeTrackInfo:
 			if (info.trackInfo != nullptr) {
-				TrackInfo* trackToDelete = info.trackInfo;
+				PlayerTrackInfo* trackToDelete = info.trackInfo;
 				while (trackToDelete != nullptr) {
-					TrackInfo* currentTrack = trackToDelete;
+					PlayerTrackInfo* currentTrack = trackToDelete;
 					trackToDelete = currentTrack->nextTrack;
 					if (currentTrack->albumArt != nullptr) {
 						sp_image_release(currentTrack->albumArt);

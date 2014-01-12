@@ -20,6 +20,15 @@ typedef struct PlaylistInfo {
 	sp_image* image;
 };
 
+typedef struct TrackInfo {
+	int id = -1;
+	int duration = -1;
+	int numArtists = -1;
+	const char* name = nullptr;
+	const char* album = nullptr;
+	const char** artist = nullptr;
 
+	sp_image* artwork;
+};
 
 #endif /* RESPONSESTRUCTURES_HPP_ */

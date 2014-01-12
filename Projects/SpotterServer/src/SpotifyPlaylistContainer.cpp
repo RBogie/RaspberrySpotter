@@ -50,6 +50,9 @@ ClientResponse* SpotifyPlaylistContainer::processTask(PlaylistTask* task) {
 	case CommandPlayPlaylist:
 		return playPlaylist(task);
 		break;
+	case CommandListTracks:
+		return listTracks(task);
+		break;
 	}
 	return nullptr;
 }
@@ -114,6 +117,66 @@ ListResponse<PlaylistInfo*>* SpotifyPlaylistContainer::listPlaylists(
 		}
 	}
 	return response;
+}
+
+ListResponse<TrackInfo*>* SpotifyPlaylistContainer::listTracks(
+		PlaylistTask* task) {
+	ListResponse<TrackInfo*>* response = new ListResponse<TrackInfo*>();
+	response->setListType(ListTypeSong);
+	ListPlaylistTrackInfo info = task->getCommandInfo().listPlaylistTrackInfo;
+	int playlistId = info.playlist;
+	if (playlistId > 0
+			&& playlistId
+					< sp_playlistcontainer_num_playlists(playlistContainer)) {
+		bool sendName = ((info.trackInfoFlags & TrackInfoName) == TrackInfoName);
+		bool sendArtist = ((info.trackInfoFlags & TrackInfoArtist)
+				== TrackInfoArtist);
+		bool sendAlbum = ((info.trackInfoFlags & TrackInfoAlbum)
+				== TrackInfoAlbum);
+		bool sendDuration = ((info.trackInfoFlags & TrackInfoDuration)
+				== TrackInfoDuration);
+		bool sendArtwork = ((info.trackInfoFlags & TrackInfoArtwork)
+				== TrackInfoArtwork);
+
+		sp_playlist* playlist = sp_playlistcontainer_playlist(playlistContainer,
+				playlistId);
+		int numTracks = sp_playlist_num_tracks(playlist);
+		for (int i = 0; i < numTracks; i++) {
+			TrackInfo* trackInfo = new TrackInfo();
+			trackInfo->id = i;
+
+			sp_track* track = sp_playlist_track(playlist, i);
+
+			if (sendName) {
+				trackInfo->name = sp_track_name(track);
+			}
+			if (sendArtist) {
+				trackInfo->numArtists = sp_track_num_artists(track);
+				trackInfo->artist = new const char*[trackInfo->numArtists];
+				for (int j = 0; j < trackInfo->numArtists; j++) {
+					trackInfo->artist[j] = sp_artist_name(
+							sp_track_artist(track, j));
+				}
+			}
+			if (sendAlbum) {
+				trackInfo->album = sp_album_name(sp_track_album(track));
+			}
+			if (sendDuration) {
+				trackInfo->duration = sp_track_duration(track);
+			}
+			if (sendArtwork) {
+				trackInfo->artwork = sp_image_create(session,
+						sp_album_cover(sp_track_album(track),
+								SP_IMAGE_SIZE_NORMAL));
+			}
+			response->addMember(trackInfo);
+		}
+
+		return response;
+	}
+
+	delete response;
+	return nullptr;
 }
 
 SpotifyPlaylistContainer::~SpotifyPlaylistContainer() {

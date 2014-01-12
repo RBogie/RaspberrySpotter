@@ -37,6 +37,7 @@ public:
 
 	ClientResponse* playPlaylist(PlaylistTask* task);
 	ListResponse<PlaylistInfo*>* listPlaylists(PlaylistTask* task);
+	ListResponse<TrackInfo*>* listTracks(PlaylistTask* task);
 private:
 	sp_session* session;
 	SpotifySession* spotifySession;

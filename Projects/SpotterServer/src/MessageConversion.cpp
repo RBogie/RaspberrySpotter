@@ -173,6 +173,49 @@ Task* convertJsonToTask(const char* json) {
 						} else {
 							logError("convertJsonToTask: missing PlaylistID");
 						}
+					} else if (strcasecmp(command, "ListTracks") == 0) {
+						task->setCommand(CommandListTracks);
+						if (typeSpecific.HasMember("PlaylistId")
+								&& typeSpecific.HasMember("TrackInfo")) {
+							const Value& info = typeSpecific["PlaylistId"];
+							if (info.IsInt()) {
+								ListPlaylistTrackInfo trackInfo;
+								trackInfo.playlist = info.GetInt();
+								trackInfo.trackInfoFlags = 0;
+								const Value& info = typeSpecific["TrackInfo"];
+								if (info.IsArray()) {
+									for (SizeType i = 0; i < info.Size(); i++) {
+										const char* temp = info[i].GetString();
+										if (strcasecmp(temp, "Name") == 0) {
+											trackInfo.trackInfoFlags |=
+													TrackInfoName;
+										}
+										if (strcasecmp(temp, "Duration") == 0) {
+											trackInfo.trackInfoFlags |=
+													TrackInfoDuration;
+										}
+										if (strcasecmp(temp, "Artist") == 0) {
+											trackInfo.trackInfoFlags |=
+													TrackInfoArtist;
+										}
+										if (strcasecmp(temp, "Album") == 0) {
+											trackInfo.trackInfoFlags |=
+													TrackInfoAlbum;
+										}
+										if (strcasecmp(temp, "Artwork") == 0) {
+											trackInfo.trackInfoFlags |=
+													TrackInfoArtwork;
+										}
+									}
+								}
+							} else {
+								logError(
+										"convertJsonToTask: incorrect PlaylistID");
+							}
+
+						} else {
+							logError("convertJsonToTask: missing info");
+						}
 					} else {
 						logError(
 								"convertJsonToTask: Unknown (playlist) command!");
@@ -294,6 +337,98 @@ char* convertListPlaylistInfoToJson(ListResponse<PlaylistInfo*>* response,
 	return newMessage;
 }
 
+char* convertListTrackInfoToJson(ListResponse<TrackInfo*>* response,
+		bool broadcast) {
+	Document d;
+	d.SetObject();
+	Value type("List");
+	d.AddMember("Type", type, d.GetAllocator());
+	Value typeSpecific;
+	typeSpecific.SetObject();
+
+	Value list;
+	list.SetArray();
+	while (response->getListSize() > 0) {
+		Value trackInfo;
+		trackInfo.SetObject();
+		bool infoAvailable = false;
+		TrackInfo* info = response->removeFirstMember();
+
+		if (info->id > -1) {
+			infoAvailable = true;
+			Value id(info->id);
+			trackInfo.AddMember("Id", id, d.GetAllocator());
+		}
+		if (info->name != nullptr) {
+			infoAvailable = true;
+			Value name(info->name);
+			trackInfo.AddMember("Name", name, d.GetAllocator());
+		}
+		if (info->artist != nullptr) {
+			infoAvailable = true;
+			Value name(info->artist);
+			trackInfo.AddMember("Artist", name, d.GetAllocator());
+		}
+		if (info->album != nullptr) {
+			infoAvailable = true;
+			Value name(info->album);
+			trackInfo.AddMember("Album", name, d.GetAllocator());
+		}
+		if (info->duration > -1) {
+			infoAvailable = true;
+			Value name(info->artist);
+			trackInfo.AddMember("Artist", name, d.GetAllocator());
+		}
+		if (info->artwork != nullptr) {
+			if (sp_image_is_loaded(info->artwork)) {
+				size_t size;
+				const char* data = static_cast<const char*>(sp_image_data(
+						info->artwork, &size));
+
+				if (data != nullptr && size > 0) {
+					char* b64Data = new char[modp_b64_encode_len(size)];
+					int encodedSize = modp_b64_encode(b64Data, data, size);
+					if (encodedSize > 0) {
+						Value artwork;
+						artwork.SetString(b64Data, d.GetAllocator());
+						trackInfo.AddMember("Artwork", artwork,
+								d.GetAllocator());
+					}
+					delete[] b64Data;
+				}
+			} else {
+				int* imageRequestId = new int;
+				*imageRequestId = imageRequestIdCount++;
+				Value artworkImageId(*imageRequestId);
+				trackInfo.AddMember("ArtworkImageId", artworkImageId,
+						d.GetAllocator());
+				sp_image_add_load_callback(info->artwork, &imageLoadedCallback,
+						(void*) imageRequestId);
+			}
+		}
+
+		if (infoAvailable) {
+			list.PushBack(trackInfo, d.GetAllocator());
+		}
+		delete info;
+	}
+	Value listType("TrackInfo");
+	typeSpecific.AddMember("ListType", listType, d.GetAllocator());
+
+	typeSpecific.AddMember("List", list, d.GetAllocator());
+
+	d.AddMember("TypeSpecific", typeSpecific, d.GetAllocator());
+
+	StringBuffer buffer;
+	Writer<StringBuffer> writer(buffer);
+	d.Accept(writer);
+	const char* message = buffer.GetString();
+	char* newMessage = new char[buffer.Size() + 1];
+	memcpy(newMessage, message, buffer.Size());
+	newMessage[buffer.Size()] = '\0';
+	return newMessage;
+}
+
 char* convertPlayerResponseToJson(PlayerResponse* response, bool broadcast) {
 	Document d;
 	d.SetObject();
@@ -313,7 +448,7 @@ char* convertPlayerResponseToJson(PlayerResponse* response, bool broadcast) {
 
 	Value tracks;
 	tracks.SetArray();
-	TrackInfo* trackInfo = response->getPlayerResponseInfo().trackInfo;
+	PlayerTrackInfo* trackInfo = response->getPlayerResponseInfo().trackInfo;
 	while (trackInfo != nullptr) {
 		Value track;
 		track.SetObject();
@@ -397,6 +532,11 @@ char* convertResponseToJson(ClientResponse* response, bool broadcast) {
 		case ListTypePlaylist:
 			return convertListPlaylistInfoToJson(
 					dynamic_cast<ListResponse<PlaylistInfo*>*>(response),
+					broadcast);
+			break;
+		case ListTypeSong:
+			return convertListTrackInfoToJson(
+					dynamic_cast<ListResponse<TrackInfo*>*>(response),
 					broadcast);
 			break;
 		default:

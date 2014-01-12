@@ -104,11 +104,13 @@ void SpotifyPlayer::tick() {
 			sp_track* track = playQueue.front();
 			playQueue.pop_front();
 			playTrack(track);
+			paused = false;
 		} else {
 			sp_session_player_unload(session);
 			audio_fifo_flush(&audioFifo);
 			currentTrack = nullptr;
 			currentTrackEnded = false;
+			paused = false;
 			logDebug("No next track!");
 
 			PlayerResponse* response = new PlayerResponse(
@@ -144,6 +146,7 @@ ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
 			sp_session_player_play(session, true);
 			response->setMessage(nullptr);
 			response->setSuccess(true);
+			paused = false;
 		} else {
 			response->setMessage("No track to play");
 		}
@@ -154,6 +157,7 @@ ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
 		}
 		response->setMessage(nullptr);
 		response->setSuccess(true);
+		paused = true;
 		break;
 	case PlayerCommandSeek:
 		if (currentTrack != nullptr && !currentTrackEnded) {
@@ -186,9 +190,9 @@ ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
 	return response;
 }
 
-TrackInfo* SpotifyPlayer::getTrackInfo(sp_track* track) {
+PlayerTrackInfo* SpotifyPlayer::getTrackInfo(sp_track* track) {
 	if (track != nullptr) {
-		TrackInfo* trackInfo = new TrackInfo();
+		PlayerTrackInfo* trackInfo = new PlayerTrackInfo();
 		trackInfo->name = sp_track_name(track);
 		trackInfo->numArtists = sp_track_num_artists(track);
 		trackInfo->artists = new const char*[trackInfo->numArtists];

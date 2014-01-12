@@ -74,7 +74,6 @@ void TcpConnection::run() {
 void TcpConnection::sendResponse(ClientResponse* response) {
 	if (connectionOpen) {
 		char* jsonResponse = MessageConversion::convertResponseToJson(response);
-		logDebug("Message send: %s", jsonResponse);
 		sendResponse(jsonResponse);
 	}
 	delete response;
