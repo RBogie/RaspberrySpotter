@@ -194,9 +194,9 @@ Task* convertJsonToTask(const char* json) {
 											trackInfo.trackInfoFlags |=
 													TrackInfoDuration;
 										}
-										if (strcasecmp(temp, "Artist") == 0) {
+										if (strcasecmp(temp, "Artists") == 0) {
 											trackInfo.trackInfoFlags |=
-													TrackInfoArtist;
+													TrackInfoArtists;
 										}
 										if (strcasecmp(temp, "Album") == 0) {
 											trackInfo.trackInfoFlags |=
@@ -208,6 +208,7 @@ Task* convertJsonToTask(const char* json) {
 										}
 									}
 								}
+								commandInfo.listPlaylistTrackInfo = trackInfo;
 							} else {
 								logError(
 										"convertJsonToTask: incorrect PlaylistID");
@@ -364,10 +365,14 @@ char* convertListTrackInfoToJson(ListResponse<TrackInfo*>* response,
 			Value name(info->name);
 			trackInfo.AddMember("Name", name, d.GetAllocator());
 		}
-		if (info->artist != nullptr) {
-			infoAvailable = true;
-			Value name(info->artist);
-			trackInfo.AddMember("Artist", name, d.GetAllocator());
+		if (info->numArtists > 0) {
+			Value artists;
+			artists.SetArray();
+			for (int i = 0; i < info->numArtists; i++) {
+				Value artist(info->artists[i]);
+				artists.PushBack(artist, d.GetAllocator());
+			}
+			trackInfo.AddMember("Artists", artists, d.GetAllocator());
 		}
 		if (info->album != nullptr) {
 			infoAvailable = true;
@@ -376,8 +381,8 @@ char* convertListTrackInfoToJson(ListResponse<TrackInfo*>* response,
 		}
 		if (info->duration > -1) {
 			infoAvailable = true;
-			Value name(info->artist);
-			trackInfo.AddMember("Artist", name, d.GetAllocator());
+			Value name(info->duration);
+			trackInfo.AddMember("Duration", name, d.GetAllocator());
 		}
 		if (info->artwork != nullptr) {
 			if (sp_image_is_loaded(info->artwork)) {

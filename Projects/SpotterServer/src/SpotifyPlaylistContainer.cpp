@@ -125,12 +125,12 @@ ListResponse<TrackInfo*>* SpotifyPlaylistContainer::listTracks(
 	response->setListType(ListTypeSong);
 	ListPlaylistTrackInfo info = task->getCommandInfo().listPlaylistTrackInfo;
 	int playlistId = info.playlist;
-	if (playlistId > 0
+	if (playlistId > -1
 			&& playlistId
 					< sp_playlistcontainer_num_playlists(playlistContainer)) {
 		bool sendName = ((info.trackInfoFlags & TrackInfoName) == TrackInfoName);
-		bool sendArtist = ((info.trackInfoFlags & TrackInfoArtist)
-				== TrackInfoArtist);
+		bool sendArtist = ((info.trackInfoFlags & TrackInfoArtists)
+				== TrackInfoArtists);
 		bool sendAlbum = ((info.trackInfoFlags & TrackInfoAlbum)
 				== TrackInfoAlbum);
 		bool sendDuration = ((info.trackInfoFlags & TrackInfoDuration)
@@ -152,9 +152,9 @@ ListResponse<TrackInfo*>* SpotifyPlaylistContainer::listTracks(
 			}
 			if (sendArtist) {
 				trackInfo->numArtists = sp_track_num_artists(track);
-				trackInfo->artist = new const char*[trackInfo->numArtists];
+				trackInfo->artists = new const char*[trackInfo->numArtists];
 				for (int j = 0; j < trackInfo->numArtists; j++) {
-					trackInfo->artist[j] = sp_artist_name(
+					trackInfo->artists[j] = sp_artist_name(
 							sp_track_artist(track, j));
 				}
 			}

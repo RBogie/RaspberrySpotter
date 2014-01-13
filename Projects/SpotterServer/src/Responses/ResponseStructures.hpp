@@ -26,7 +26,7 @@ typedef struct TrackInfo {
 	int numArtists = -1;
 	const char* name = nullptr;
 	const char* album = nullptr;
-	const char** artist = nullptr;
+	const char** artists = nullptr;
 
 	sp_image* artwork;
 };
