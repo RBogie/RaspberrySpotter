@@ -19,8 +19,9 @@ namespace fambogie {
 enum Command {
 	CommandUnknown,
 	CommandList,
-	CommandPlayPlaylist,
 	CommandListTracks,
+	CommandPlayPlaylist,
+	CommandPlayTrack,
 };
 
 enum ListFlags {
@@ -34,7 +35,7 @@ enum TrackInfoFlags {
 	TrackInfoName = 1,
 	TrackInfoDuration = 2,
 	TrackInfoAlbum = 4,
-	TrackInfoArtist = 8,
+	TrackInfoArtists = 8,
 	TrackInfoArtwork = 16,
 };
 
@@ -43,10 +44,16 @@ typedef struct ListPlaylistTrackInfo {
 	int playlist;
 };
 
+typedef struct PlayTrackCommandInfo{
+	int playlistId;
+	int trackId;
+};
+
 union CommandInfo {
 	char ListFlags;
 	int playlist;
 	ListPlaylistTrackInfo listPlaylistTrackInfo;
+	PlayTrackCommandInfo playTrackCommandInfo;
 };
 
 class PlaylistTask: public Task {

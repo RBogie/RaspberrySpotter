@@ -173,6 +173,23 @@ Task* convertJsonToTask(const char* json) {
 						} else {
 							logError("convertJsonToTask: missing PlaylistID");
 						}
+					} else if (strcasecmp(command, "PlayTrack") == 0) {
+						task->setCommand(CommandPlayTrack);
+						PlayTrackCommandInfo info;
+						if (typeSpecific.HasMember("PlaylistId") && typeSpecific.HasMember("TrackId")) {
+							const Value& playlist = typeSpecific["PlaylistId"];
+							const Value& track = typeSpecific["TrackId"];
+							if (playlist.IsInt() && track.IsInt()) {
+								info.playlistId = playlist.GetInt();
+								info.trackId = track.GetInt();
+							} else {
+								logError(
+										"convertJsonToTask: incorrect argument");
+							}
+							commandInfo.playTrackCommandInfo = info;
+						} else {
+							logError("convertJsonToTask: missing argument");
+						}
 					} else if (strcasecmp(command, "ListTracks") == 0) {
 						task->setCommand(CommandListTracks);
 						if (typeSpecific.HasMember("PlaylistId")
@@ -547,7 +564,6 @@ char* convertResponseToJson(ClientResponse* response, bool broadcast) {
 		default:
 			logError("Unknown listtype");
 		}
-
 		break;
 	}
 		break;

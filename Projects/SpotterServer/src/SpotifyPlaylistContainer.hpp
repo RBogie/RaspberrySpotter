@@ -36,6 +36,7 @@ public:
 	ClientResponse* processTask(PlaylistTask* task);
 
 	ClientResponse* playPlaylist(PlaylistTask* task);
+	ClientResponse* playTrack(PlaylistTask* task);
 	ListResponse<PlaylistInfo*>* listPlaylists(PlaylistTask* task);
 	ListResponse<TrackInfo*>* listTracks(PlaylistTask* task);
 private:

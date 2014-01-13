@@ -50,6 +50,9 @@ ClientResponse* SpotifyPlaylistContainer::processTask(PlaylistTask* task) {
 	case CommandPlayPlaylist:
 		return playPlaylist(task);
 		break;
+	case CommandPlayTrack:
+		return playTrack(task);
+		break;
 	case CommandListTracks:
 		return listTracks(task);
 		break;
@@ -79,6 +82,35 @@ ClientResponse* SpotifyPlaylistContainer::playPlaylist(PlaylistTask* task) {
 			response->setMessage(nullptr);
 		} else {
 			response->setMessage("Playlist does not have any tracks");
+		}
+	}
+
+	return response;
+}
+
+ClientResponse* SpotifyPlaylistContainer::playTrack(PlaylistTask* task) {
+	StatusResponse* response = new StatusResponse(false,
+			"Playlist Id is out of range!");
+
+	PlayTrackCommandInfo info = task->getCommandInfo().playTrackCommandInfo;
+	if (info.playlistId > -1
+			&& info.playlistId
+					< sp_playlistcontainer_num_playlists(playlistContainer)) {
+		sp_playlist* playlist = sp_playlistcontainer_playlist(playlistContainer,
+				info.playlistId);
+		if (info.trackId > -1
+				&& info.trackId < sp_playlist_num_tracks(playlist)) {
+			sp_track* track = sp_playlist_track(playlist, info.trackId);
+			spotifySession->getSpotifyPlayer()->clearPlayQueue();
+			spotifySession->getSpotifyPlayer()->playTrack(track);
+			for (int i = info.trackId + 1; i < sp_playlist_num_tracks(playlist); i++) {
+				spotifySession->getSpotifyPlayer()->addTrackToQueue(
+						sp_playlist_track(playlist, i));
+			}
+			response->setSuccess(true);
+			response->setMessage(nullptr);
+		} else {
+			response->setMessage("Track does not exist!");
 		}
 	}
 
