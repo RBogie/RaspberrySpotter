@@ -28,6 +28,7 @@ public:
 
 	void playTrack(sp_track* track);
 	void addTrackToQueue(sp_track* track);
+	void addTrackToPlayedQueue(sp_track* track);
 	void clearPlayQueue();
 
 	int onMusicDelivery(const sp_audioformat* format, const void* frames,
@@ -47,9 +48,11 @@ private:
 	bool paused;
 
 	sp_track* currentTrack;
+	std::list<sp_track*> playedQueue;
 	std::list<sp_track*> playQueue;
 
 	PlayerTrackInfo* getTrackInfo(sp_track* track);
+	PlayerResponse* getCurrentPlayingResponse();
 };
 
 } /* namespace fambogie */

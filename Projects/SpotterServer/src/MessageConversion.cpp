@@ -78,7 +78,7 @@ namespace MessageConversion {
 const char* getHandshakeInitiation() {
 	return "{"
 			"\"ServerName\": \"SpotterServer\","
-			"\"ProtocolVersion\": 2"
+			"\"ProtocolVersion\": 3"
 			"}";
 }
 
@@ -88,7 +88,7 @@ bool isHandshakeCorrect(const char* response) {
 	if (d.IsObject()) {
 		if (d.HasMember("ClientName") && d.HasMember("ProtocolVersion")) {
 			const Value& protocolVersion = d["ProtocolVersion"];
-			return (protocolVersion.IsInt() && protocolVersion.GetInt() == 2);
+			return (protocolVersion.IsInt() && protocolVersion.GetInt() == 3);
 		}
 	}
 	return false;
@@ -176,7 +176,8 @@ Task* convertJsonToTask(const char* json) {
 					} else if (strcasecmp(command, "PlayTrack") == 0) {
 						task->setCommand(CommandPlayTrack);
 						PlayTrackCommandInfo info;
-						if (typeSpecific.HasMember("PlaylistId") && typeSpecific.HasMember("TrackId")) {
+						if (typeSpecific.HasMember("PlaylistId")
+								&& typeSpecific.HasMember("TrackId")) {
 							const Value& playlist = typeSpecific["PlaylistId"];
 							const Value& track = typeSpecific["TrackId"];
 							if (playlist.IsInt() && track.IsInt()) {
@@ -255,6 +256,10 @@ Task* convertJsonToTask(const char* json) {
 						task->setCommand(PlayerCommandPlay);
 					} else if (strcasecmp(command, "Pause") == 0) {
 						task->setCommand(PlayerCommandPause);
+					} else if (strcasecmp(command, "Next") == 0) {
+						task->setCommand(PlayerCommandNext);
+					} else if (strcasecmp(command, "Prev") == 0) {
+						task->setCommand(PlayerCommandPrev);
 					} else if (strcasecmp(command, "Seek") == 0) {
 						task->setCommand(PlayerCommandSeek);
 						PlayerCommandInfo info;
@@ -531,6 +536,12 @@ char* convertPlayerResponseToJson(PlayerResponse* response, bool broadcast) {
 		trackInfo = trackInfo->nextTrack;
 	}
 	typeSpecific.AddMember("Tracks", tracks, d.GetAllocator());
+
+	int index = response->getPlayerResponseInfo().currentPlayingPosition;
+	if (index > -1) {
+		Value currentTrackIndex(index);
+		typeSpecific.AddMember("CurrentTrackIndex", currentTrackIndex, d.GetAllocator());
+	}
 
 	d.AddMember("TypeSpecific", typeSpecific, d.GetAllocator());
 

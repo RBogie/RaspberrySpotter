@@ -27,7 +27,10 @@ class PlayerResponse: public ClientResponse {
 public:
 
 	union PlayerResponseInfo {
-		PlayerTrackInfo* trackInfo;
+		struct {
+			PlayerTrackInfo* trackInfo;
+			uint32 currentPlayingPosition;
+		};
 	};
 
 	enum PlayerResponseType {

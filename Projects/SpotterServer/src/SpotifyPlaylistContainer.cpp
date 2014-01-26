@@ -100,8 +100,12 @@ ClientResponse* SpotifyPlaylistContainer::playTrack(PlaylistTask* task) {
 				info.playlistId);
 		if (info.trackId > -1
 				&& info.trackId < sp_playlist_num_tracks(playlist)) {
-			sp_track* track = sp_playlist_track(playlist, info.trackId);
 			spotifySession->getSpotifyPlayer()->clearPlayQueue();
+			for(int i = 0; i < info.trackId; i++) {
+				spotifySession->getSpotifyPlayer()->addTrackToPlayedQueue(sp_playlist_track(playlist, i));
+			}
+
+			sp_track* track = sp_playlist_track(playlist, info.trackId);
 			spotifySession->getSpotifyPlayer()->playTrack(track);
 			for (int i = info.trackId + 1; i < sp_playlist_num_tracks(playlist); i++) {
 				spotifySession->getSpotifyPlayer()->addTrackToQueue(

@@ -24,6 +24,8 @@ SpotifyPlayer::SpotifyPlayer(sp_session* session,
 	this->currentTrack = nullptr;
 	this->currentTrackEnded = false;
 	audio_init(&audioFifo);
+	sp_session_preferred_bitrate(session, SP_BITRATE_320k);
+	sp_session_set_volume_normalization(session, true);
 }
 
 SpotifyPlayer::~SpotifyPlayer() {
@@ -38,23 +40,15 @@ void SpotifyPlayer::playTrack(sp_track* track) {
 			== SP_TRACK_AVAILABILITY_AVAILABLE
 			&& !sp_track_is_local(session, track)) {
 		currentTrackEnded = false;
+		paused = false;
 
 		sp_session_player_play(session, true);
 
-		PlayerResponse* response = new PlayerResponse(
-				PlayerResponse::PlayerResponseTypeTrackInfo);
-		PlayerResponse::PlayerResponseInfo responseInfo;
-		responseInfo.trackInfo = getTrackInfo(track);
-
 		if (playQueue.size() > 0) {
 			sp_session_player_prefetch(session, playQueue.front());
-			responseInfo.trackInfo->nextTrack = getTrackInfo(playQueue.front());
 		}
-		response->setPlayerResponseInfo(responseInfo);
-		response->setCurrentlyPlaying(true);
 
-		logDebug("Now playing: %s", responseInfo.trackInfo->name);
-		spotifySession->broadcastMessage(response);
+		spotifySession->broadcastMessage(getCurrentPlayingResponse());
 	} else {
 		currentTrackEnded = true;
 	}
@@ -100,6 +94,9 @@ void SpotifyPlayer::onEndOfTrack() {
 
 void SpotifyPlayer::tick() {
 	if (currentTrackEnded) {
+		if (currentTrack != nullptr) {
+			playedQueue.push_front(currentTrack);
+		}
 		if (playQueue.size() > 0) {
 			sp_track* track = playQueue.front();
 			playQueue.pop_front();
@@ -134,8 +131,15 @@ void SpotifyPlayer::addTrackToQueue(sp_track* track) {
 	}
 }
 
+void SpotifyPlayer::addTrackToPlayedQueue(sp_track* track) {
+	if (track != nullptr) {
+		playedQueue.push_front(track);
+	}
+}
+
 void SpotifyPlayer::clearPlayQueue() {
 	playQueue.clear();
+	playedQueue.clear();
 }
 
 ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
@@ -159,6 +163,23 @@ ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
 		response->setSuccess(true);
 		paused = true;
 		break;
+	case PlayerCommandPrev:
+		if (playedQueue.size() > 0) {
+			sp_track* track = playedQueue.front();
+			playedQueue.pop_front();
+			if (currentTrack != nullptr) {
+				playQueue.push_front(currentTrack);
+			}
+			playTrack(track);
+			response->setMessage(nullptr);
+			response->setSuccess(true);
+		} else {
+			response->setMessage("No previous track available!");
+		}
+		break;
+	case PlayerCommandNext:
+		currentTrackEnded = true;
+		break;
 	case PlayerCommandSeek:
 		if (currentTrack != nullptr && !currentTrackEnded) {
 			sp_session_player_seek(session,
@@ -171,22 +192,43 @@ ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
 		break;
 	case PlayerCommandCurrentPlayingInfo:
 		delete response;
-		PlayerResponse* playerResponse = new PlayerResponse(
-				PlayerResponse::PlayerResponseTypeTrackInfo);
-		if (currentTrack != nullptr && !currentTrackEnded) {
-			PlayerResponse::PlayerResponseInfo responseInfo;
-			responseInfo.trackInfo = getTrackInfo(currentTrack);
-			if (playQueue.size() > 0) {
-				responseInfo.trackInfo->nextTrack = getTrackInfo(
-						playQueue.front());
-			}
-			playerResponse->setPlayerResponseInfo(responseInfo);
-			playerResponse->setCurrentlyPlaying(!paused);
-		} else {
-			playerResponse->setCurrentlyPlaying(false);
-		}
+		PlayerResponse* playerResponse = getCurrentPlayingResponse();
 		return playerResponse;
 	}
+	return response;
+}
+
+PlayerResponse* SpotifyPlayer::getCurrentPlayingResponse() {
+	PlayerResponse* response = new PlayerResponse(
+			PlayerResponse::PlayerResponseTypeTrackInfo);
+	PlayerResponse::PlayerResponseInfo responseInfo;
+	responseInfo.trackInfo = nullptr;
+	responseInfo.currentPlayingPosition = -1;
+
+	PlayerTrackInfo** nextInfo = &responseInfo.trackInfo;
+
+	int currentPosition = 0;
+
+	if (playedQueue.size() > 0) {
+		*nextInfo = getTrackInfo(playedQueue.front());
+		nextInfo = &(*nextInfo)->nextTrack;
+		currentPosition++;
+	}
+
+	if (currentTrack != nullptr) {
+		*nextInfo = getTrackInfo(currentTrack);
+		nextInfo = &(*nextInfo)->nextTrack;
+		responseInfo.currentPlayingPosition = currentPosition++;
+	}
+
+	if (playQueue.size() > 0) {
+		*nextInfo = getTrackInfo(playQueue.front());
+		nextInfo = &(*nextInfo)->nextTrack;
+		currentPosition++;
+	}
+	response->setPlayerResponseInfo(responseInfo);
+	response->setCurrentlyPlaying(
+			currentTrack != nullptr && !paused && !currentTrackEnded);
 	return response;
 }
 

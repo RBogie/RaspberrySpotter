@@ -17,6 +17,8 @@ enum PlayerCommand {
 	PlayerCommandUnknown,
 	PlayerCommandPlay,
 	PlayerCommandPause,
+	PlayerCommandNext,
+	PlayerCommandPrev,
 	PlayerCommandSeek,
 	PlayerCommandCurrentPlayingInfo,
 
