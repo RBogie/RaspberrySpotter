@@ -30,6 +30,7 @@ public:
 	void addTrackToQueue(sp_track* track);
 	void addTrackToPlayedQueue(sp_track* track);
 	void clearPlayQueue();
+    void setShuffle(bool shuffle);
 
 	int onMusicDelivery(const sp_audioformat* format, const void* frames,
 			int numFrames);
@@ -50,6 +51,8 @@ private:
 	sp_track* currentTrack;
 	std::list<sp_track*> playedQueue;
 	std::list<sp_track*> playQueue;
+    std::list<sp_track*> currentPlayingList;
+    bool isShuffled;
 
 	PlayerTrackInfo* getTrackInfo(sp_track* track);
 	PlayerResponse* getCurrentPlayingResponse();

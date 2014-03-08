@@ -23,6 +23,7 @@ SpotifyPlayer::SpotifyPlayer(sp_session* session,
 	this->spotifySession = spotifySession;
 	this->currentTrack = nullptr;
 	this->currentTrackEnded = false;
+    this->isShuffled = false;
 	audio_init(&audioFifo);
 	sp_session_preferred_bitrate(session, SP_BITRATE_320k);
 	sp_session_set_volume_normalization(session, true);
@@ -125,21 +126,25 @@ void SpotifyPlayer::addTrackToQueue(sp_track* track) {
 		} else {
 			sp_session_player_prefetch(session, track);
 			playQueue.push_back(track);
+            currentPlayingList.push_back(track);
 		}
 	} else {
 		playQueue.push_back(track);
+        currentPlayingList.push_back(track);
 	}
 }
 
 void SpotifyPlayer::addTrackToPlayedQueue(sp_track* track) {
 	if (track != nullptr) {
 		playedQueue.push_front(track);
+        currentPlayingList.push_back(track);
 	}
 }
 
 void SpotifyPlayer::clearPlayQueue() {
 	playQueue.clear();
 	playedQueue.clear();
+    currentPlayingList.clear();
 }
 
 ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
@@ -191,9 +196,22 @@ ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
 		}
 		break;
 	case PlayerCommandCurrentPlayingInfo:
+    {
 		delete response;
 		PlayerResponse* playerResponse = getCurrentPlayingResponse();
 		return playerResponse;
+    }
+    case PlayerCommandShuffle:
+    {
+        delete response;
+        setShuffle(task->getCommandInfo().shuffle);
+        PlayerResponse* playerResponse = getCurrentPlayingResponse();
+        return playerResponse;
+    }
+
+    default:
+        response->setMessage("Unknown command received. Ignoring...");
+        break;
 	}
 	return response;
 }
@@ -204,6 +222,7 @@ PlayerResponse* SpotifyPlayer::getCurrentPlayingResponse() {
 	PlayerResponse::PlayerResponseInfo responseInfo;
 	responseInfo.trackInfo = nullptr;
 	responseInfo.currentPlayingPosition = -1;
+    responseInfo.shuffle = this->isShuffled;
 
 	PlayerTrackInfo** nextInfo = &responseInfo.trackInfo;
 
@@ -255,6 +274,29 @@ PlayerTrackInfo* SpotifyPlayer::getTrackInfo(sp_track* track) {
 	}
 
 	return nullptr;
+}
+
+void SpotifyPlayer::setShuffle(bool shuffle) {
+    if(shuffle) {
+
+    } else {
+        //Restore original list
+        playedQueue.clear();
+        playQueue.clear();
+
+        bool foundCurrentTrack;
+        for(std::list<sp_track*>::const_iterator iterator = currentPlayingList.begin(); iterator != currentPlayingList.end(); iterator++) {
+            if(foundCurrentTrack) {
+                playQueue.push_back(*iterator);
+            } else {
+                if(*iterator == currentTrack) {
+                    foundCurrentTrack = true;
+                } else {
+                    playedQueue.push_front(*iterator);
+                }
+            }
+        }
+    }
 }
 
 } /* namespace fambogie */

@@ -39,12 +39,12 @@ enum TrackInfoFlags {
 	TrackInfoArtwork = 16,
 };
 
-typedef struct ListPlaylistTrackInfo {
+struct ListPlaylistTrackInfo {
 	char trackInfoFlags;
 	int playlist;
 };
 
-typedef struct PlayTrackCommandInfo{
+struct PlayTrackCommandInfo{
 	int playlistId;
 	int trackId;
 };

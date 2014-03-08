@@ -30,6 +30,7 @@ public:
 		struct {
 			PlayerTrackInfo* trackInfo;
 			uint32 currentPlayingPosition;
+            bool shuffle;
 		};
 	};
 
@@ -44,7 +45,11 @@ public:
 		switch (type) {
 		case PlayerResponseTypeTrackInfo:
 			info.trackInfo = nullptr;
+            info.shuffle = false;
 			break;
+        default:
+            logError("Not implemented type");
+            break;
 		}
 	}
 
@@ -64,6 +69,8 @@ public:
 				}
 			}
 			break;
+        default:
+            break;
 		}
 	}
 

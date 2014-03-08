@@ -275,7 +275,15 @@ Task* convertJsonToTask(const char* json) {
 						task->setCommandInfo(info);
 					} else if (strcasecmp(command, "CurrentPlayingInfo") == 0) {
 						task->setCommand(PlayerCommandCurrentPlayingInfo);
-					} else {
+                    } else if(strcasecmp(command, "Shuffle") == 0) {
+                        task->setCommand(PlayerCommandShuffle);
+                        PlayerCommandInfo info;
+                        info.shuffle = true;
+                        if(typeSpecific.HasMember("Shuffle") && typeSpecific["Shuffle"].IsBool()) {
+                            info.shuffle = typeSpecific["Shuffle"].GetBool();
+                        }
+                        task->setCommandInfo(info);
+                    }else {
 						logError(
 								"convertJsonToTask: Unknown (player) command!");
 						delete task;
@@ -297,6 +305,7 @@ Task* convertJsonToTask(const char* json) {
 		logError("convertJsonToTask: Type information missing!");
 		return nullptr;
 	}
+    return nullptr;
 }
 
 char* convertListPlaylistInfoToJson(ListResponse<PlaylistInfo*>* response,
@@ -542,6 +551,8 @@ char* convertPlayerResponseToJson(PlayerResponse* response, bool broadcast) {
 		Value currentTrackIndex(index);
 		typeSpecific.AddMember("CurrentTrackIndex", currentTrackIndex, d.GetAllocator());
 	}
+    Value isShuffled(response->getPlayerResponseInfo().shuffle);
+    typeSpecific.AddMember("Shuffle", isShuffled, d.GetAllocator());
 
 	d.AddMember("TypeSpecific", typeSpecific, d.GetAllocator());
 

@@ -11,22 +11,22 @@
 #include "../GlobalDefines.hpp"
 #include <libspotify/api.h>
 
-typedef struct PlaylistInfo {
-	int id = -1;
-	const char* name = nullptr;
-	int numTracks = -1;
+struct PlaylistInfo {
+    int id;
+    const char* name;
+    int numTracks;
 	const char* description;
 
 	sp_image* image;
 };
 
-typedef struct TrackInfo {
-	int id = -1;
-	int duration = -1;
-	int numArtists = -1;
-	const char* name = nullptr;
-	const char* album = nullptr;
-	const char** artists = nullptr;
+struct TrackInfo {
+    int id;
+    int duration;
+    int numArtists;
+    const char* name;
+    const char* album;
+    const char** artists;
 
 	sp_image* artwork;
 };

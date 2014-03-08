@@ -21,11 +21,12 @@ enum PlayerCommand {
 	PlayerCommandPrev,
 	PlayerCommandSeek,
 	PlayerCommandCurrentPlayingInfo,
-
+    PlayerCommandShuffle,
 };
 
 union PlayerCommandInfo {
 	int seekPosition;
+    bool shuffle;
 };
 
 class PlayerTask: public Task {
