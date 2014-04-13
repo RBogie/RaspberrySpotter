@@ -198,9 +198,10 @@ int SpotifySession::onMusicDeliveryDispatch(sp_session* session,
 			sessionMapping.find(session);
 
 	if (iterator != sessionMapping.end()) {
-		iterator->second->onMusicDelivery(format, frames, num_frames);
+        return iterator->second->onMusicDelivery(format, frames, num_frames);
 	} else {
 		logError("Could not find session: %p", (void*) session);
+        return 0;
 	}
 }
 

@@ -31,6 +31,7 @@ public:
 	void addTrackToPlayedQueue(sp_track* track);
 	void clearPlayQueue();
     void setShuffle(bool shuffle);
+    bool isShuffled();
 
 	int onMusicDelivery(const sp_audioformat* format, const void* frames,
 			int numFrames);
@@ -41,8 +42,8 @@ public:
 	ClientResponse* processTask(PlayerTask* task);
 
 private:
-	sp_session* session;
-	SpotifySession* spotifySession;
+    sp_session* session;
+    SpotifySession* spotifySession;
 	audio_fifo_t audioFifo;
 
 	bool currentTrackEnded;
@@ -52,7 +53,7 @@ private:
 	std::list<sp_track*> playedQueue;
 	std::list<sp_track*> playQueue;
     std::list<sp_track*> currentPlayingList;
-    bool isShuffled;
+    bool shuffled;
 
 	PlayerTrackInfo* getTrackInfo(sp_track* track);
 	PlayerResponse* getCurrentPlayingResponse();

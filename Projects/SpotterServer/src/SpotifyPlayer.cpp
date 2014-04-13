@@ -9,6 +9,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
+#include <algorithm>
 
 #include "SpotifySession.hpp"
 #include "Tasks/PlayerTask.hpp"
@@ -23,7 +25,7 @@ SpotifyPlayer::SpotifyPlayer(sp_session* session,
 	this->spotifySession = spotifySession;
 	this->currentTrack = nullptr;
 	this->currentTrackEnded = false;
-    this->isShuffled = false;
+    this->shuffled = false;
 	audio_init(&audioFifo);
 	sp_session_preferred_bitrate(session, SP_BITRATE_320k);
 	sp_session_set_volume_normalization(session, true);
@@ -114,6 +116,9 @@ void SpotifyPlayer::tick() {
 			PlayerResponse* response = new PlayerResponse(
 					PlayerResponse::PlayerResponseTypeTrackInfo);
 			response->setCurrentlyPlaying(false);
+            PlayerResponse::PlayerResponseInfo info;
+            info.shuffle = shuffled;
+            response->setPlayerResponseInfo(info);
 			spotifySession->broadcastMessage(response);
 		}
 	}
@@ -203,26 +208,24 @@ ClientResponse* SpotifyPlayer::processTask(PlayerTask* task) {
     }
     case PlayerCommandShuffle:
     {
-        delete response;
         setShuffle(task->getCommandInfo().shuffle);
-        PlayerResponse* playerResponse = getCurrentPlayingResponse();
-        return playerResponse;
+        spotifySession->broadcastMessage(getCurrentPlayingResponse());
+        response->setMessage(nullptr);
+        response->setSuccess(true);
     }
-
     default:
-        response->setMessage("Unknown command received. Ignoring...");
         break;
 	}
 	return response;
 }
 
 PlayerResponse* SpotifyPlayer::getCurrentPlayingResponse() {
-	PlayerResponse* response = new PlayerResponse(
-			PlayerResponse::PlayerResponseTypeTrackInfo);
+    PlayerResponse* response = new PlayerResponse(
+                PlayerResponse::PlayerResponseTypeTrackInfo);
 	PlayerResponse::PlayerResponseInfo responseInfo;
 	responseInfo.trackInfo = nullptr;
 	responseInfo.currentPlayingPosition = -1;
-    responseInfo.shuffle = this->isShuffled;
+    responseInfo.shuffle = this->shuffled;
 
 	PlayerTrackInfo** nextInfo = &responseInfo.trackInfo;
 
@@ -264,9 +267,11 @@ PlayerTrackInfo* SpotifyPlayer::getTrackInfo(sp_track* track) {
 
 		sp_album* album = sp_track_album(track);
 		if (album != nullptr) {
-			trackInfo->albumName = sp_album_name(album);
-			trackInfo->albumArt = sp_image_create(session,
-					sp_album_cover(album, SP_IMAGE_SIZE_NORMAL));
+            trackInfo->albumName = sp_album_name(album);
+            const byte* cover = sp_album_cover(album, SP_IMAGE_SIZE_NORMAL);
+            if(cover != nullptr) {
+                trackInfo->albumArt = sp_image_create(session, cover);
+            }
 		}
 
 		trackInfo->nextTrack = nullptr;
@@ -277,13 +282,20 @@ PlayerTrackInfo* SpotifyPlayer::getTrackInfo(sp_track* track) {
 }
 
 void SpotifyPlayer::setShuffle(bool shuffle) {
-    if(shuffle) {
+    shuffled = shuffle;
 
+    playedQueue.clear();
+    playQueue.clear();
+
+    if(shuffle) {
+        //convert list into vector
+        std::vector<sp_track*> randomList;
+        randomList.reserve(currentPlayingList.size());
+        copy(currentPlayingList.begin(),currentPlayingList.end(),back_inserter(randomList));
+        std::random_shuffle(randomList.begin(), randomList.end());
+        std::copy( randomList.begin(), randomList.end(), std::back_inserter( playQueue ) );
     } else {
         //Restore original list
-        playedQueue.clear();
-        playQueue.clear();
-
         bool foundCurrentTrack;
         for(std::list<sp_track*>::const_iterator iterator = currentPlayingList.begin(); iterator != currentPlayingList.end(); iterator++) {
             if(foundCurrentTrack) {
@@ -297,6 +309,11 @@ void SpotifyPlayer::setShuffle(bool shuffle) {
             }
         }
     }
+}
+
+bool SpotifyPlayer::isShuffled()
+{
+    return shuffled;
 }
 
 } /* namespace fambogie */

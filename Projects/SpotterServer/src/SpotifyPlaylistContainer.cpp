@@ -101,16 +101,21 @@ ClientResponse* SpotifyPlaylistContainer::playTrack(PlaylistTask* task) {
 		if (info.trackId > -1
 				&& info.trackId < sp_playlist_num_tracks(playlist)) {
 			spotifySession->getSpotifyPlayer()->clearPlayQueue();
-			for(int i = 0; i < info.trackId; i++) {
-				spotifySession->getSpotifyPlayer()->addTrackToPlayedQueue(sp_playlist_track(playlist, i));
+			for (int i = 0; i < info.trackId; i++) {
+				spotifySession->getSpotifyPlayer()->addTrackToPlayedQueue(
+						sp_playlist_track(playlist, i));
 			}
 
 			sp_track* track = sp_playlist_track(playlist, info.trackId);
 			spotifySession->getSpotifyPlayer()->playTrack(track);
-			for (int i = info.trackId + 1; i < sp_playlist_num_tracks(playlist); i++) {
+			for (int i = info.trackId + 1; i < sp_playlist_num_tracks(playlist);
+					i++) {
 				spotifySession->getSpotifyPlayer()->addTrackToQueue(
 						sp_playlist_track(playlist, i));
 			}
+            if(spotifySession->getSpotifyPlayer()->isShuffled()) {
+                spotifySession->getSpotifyPlayer()->setShuffle(true);
+            }
 			response->setSuccess(true);
 			response->setMessage(nullptr);
 		} else {
@@ -134,22 +139,26 @@ ListResponse<PlaylistInfo*>* SpotifyPlaylistContainer::listPlaylists(
 	for (int i = 0; i < numPlaylists; i++) {
 		if (sp_playlistcontainer_playlist_type(playlistContainer, i)
 				== SP_PLAYLIST_TYPE_PLAYLIST) {
-			PlaylistInfo* playlistInfo = new PlaylistInfo();
-			playlistInfo->id = i;
 			sp_playlist* playlist = sp_playlistcontainer_playlist(
 					playlistContainer, i);
+			const char* name = sp_playlist_name(playlist);
 
-			if (sendName) {
-				playlistInfo->name = sp_playlist_name(playlist);
+			if (!(name[0] == '_' && name[1] == '_')) {
+				PlaylistInfo* playlistInfo = new PlaylistInfo();
+				playlistInfo->id = i;
+
+				if (sendName) {
+					playlistInfo->name = name;
+				}
+				if (sendNumTracks) {
+					playlistInfo->numTracks = sp_playlist_num_tracks(playlist);
+				}
+				if (sendDescription) {
+					playlistInfo->description = sp_playlist_get_description(
+							playlist);
+				}
+				response->addMember(playlistInfo);
 			}
-			if (sendNumTracks) {
-				playlistInfo->numTracks = sp_playlist_num_tracks(playlist);
-			}
-			if (sendDescription) {
-				playlistInfo->description = sp_playlist_get_description(
-						playlist);
-			}
-			response->addMember(playlistInfo);
 		}
 	}
 	return response;
